@@ -10,7 +10,7 @@ declared business-outcome contract, and a human-in-the-loop escalation path
 that hands over the *live session*.
 
 The bundled target is a deliberately hostile practice surface: a
-server-rendered, table-based "credit-union back-office console" — no test IDs,
+server-rendered, table-based "credit-union back-office console": no test IDs,
 no label association, non-semantic markup, JS-confirm dialogs on the
 irreversible action, and deterministic fault injection (not-found, validation
 error, session expiry, server error).
@@ -26,7 +26,7 @@ cp .env.example .env                      # add OPENROUTER_API_KEY (discovery on
 uv run pytest -q                          # 76 tests, offline, no keys needed
 ```
 
-## Demo path — the exact commands
+## Demo path: the exact commands
 
 Terminal 1 (the mock back-office app):
 
@@ -34,7 +34,7 @@ Terminal 1 (the mock back-office app):
 uv run cua serve                          # http://127.0.0.1:8791
 ```
 
-Terminal 2 — **discovery** (real LLM run → draft artifact):
+Terminal 2: **discovery** (real LLM run → draft artifact):
 
 ```bash
 uv run cua discover \
@@ -45,13 +45,13 @@ uv run cua discover \
 # -> evidence/discovery-live/artifact.json  (status: draft)
 ```
 
-**Approve** (declare the legitimate business outcomes — the human review step):
+**Approve** (declare the legitimate business outcomes (the human review step)):
 
 ```bash
 uv run cua approve evidence/discovery-live/artifact.json --preset-lookup-outcomes
 ```
 
-**Replay** (no LLM — the production path):
+**Replay** (no LLM; the production path):
 
 ```bash
 uv run cua replay evidence/discovery-live/artifact.json --param member_id=1002
@@ -76,7 +76,7 @@ uv run cua demo --part escalation
 
 **Latency/cost benchmark** (offline replay percentiles, escalation cycle,
 server boot; `--live` adds 3 LLM probes ≈ $0.00003; `--tests` times the
-suite — writes `evidence/performance/bench.json`, the baseline behind
+suite; writes `evidence/performance/bench.json`, the baseline behind
 DESIGN.md §7):
 
 ```bash
@@ -84,7 +84,7 @@ uv run cua bench --runs 5 --live --tests
 ```
 
 **Guardrail refusal demo** (a live model told to perform the irreversible
-freeze — it navigates there, is refused by the allowlist, and declines the
+freeze: it navigates there, is refused by the allowlist, and declines the
 unsafe goal; see DESIGN.md §6):
 
 ```bash
@@ -98,10 +98,10 @@ Interactive human operator instead of the script: pass `--operator-repl` to
 
 ## Running without live services
 
-- `uv run pytest -q` — the full engine suite (replay taxonomy, locators,
+- `uv run pytest -q`: the full engine suite (replay taxonomy, locators,
   guardrails, redaction, escalation) runs offline against an in-memory surface
   double; browser-backed integration tests run the real app locally.
-- `uv run cua demo` — every phase except a *live* discovery run works with no
+- `uv run cua demo`: every phase except a *live* discovery run works with no
   `OPENROUTER_API_KEY` (it uses the scripted stand-in and says so).
 - Replays only ever talk to `http://127.0.0.1:8791` (allowlist-enforced).
 
@@ -116,7 +116,7 @@ cua/
   agent.py        LLM discovery loop + artifact compiler (stuck detection incl. Jev)
   safety.py       allowlist (default-deny) + PII/financial redaction
   escalation.py   intervention requests, control-state machine, operator protocol
-  budgets.py      typed runtime budgets (config/budgets.json) — enforced, never advisory
+  budgets.py      typed runtime budgets (config/budgets.json): enforced, never advisory
   evidence.py     generated run records (everything persisted is redacted)
   openrouter.py   chat completions + OpenRouter Decisions API (typesafe/jev)
   cli.py          serve / discover / approve / replay / demo / bench
@@ -142,12 +142,12 @@ See [`.env.example`](.env.example): `OPENROUTER_API_KEY` (discovery only),
 | Piece | Status |
 |---|---|
 | Discovery loop, replay engine, taxonomy, guardrails, redaction, escalation mechanism | real (this repo) |
-| Target application | mock by design — a deliberate stand-in for a bank back-office surface |
+| Target application | mock by design: a deliberate stand-in for a bank back-office surface |
 | Live discovery run in `evidence/discovery-live/` | real OpenRouter model run (provenance in `meta.json`) |
 | Guardrail-refusal run in `evidence/vet-guard/` | real OpenRouter model run: the model attempts the irreversible freeze, the allowlist refuses, the model declines the unsafe goal |
-| Offline discovery (`evidence/discovery-offline/`) | scripted stand-in, clearly labeled — for keyless demos |
-| Operator UI | deliberately bare: a command protocol (file/script/terminal) — the mechanism, not the chrome, is the point |
-| Multi-tenant / desktop surfaces | design only (DESIGN.md §4) — not built |
+| Offline discovery (`evidence/discovery-offline/`) | scripted stand-in, clearly labeled, for keyless demos |
+| Operator UI | deliberately bare: a command protocol (file/script/terminal): the mechanism, not the chrome, is the point |
+| Multi-tenant / desktop surfaces | design only (DESIGN.md §4): not built |
 
 ## Site
 
@@ -156,7 +156,7 @@ configures a zero-build deploy (`publish = "site"`); the
 `deploy-site.yml` workflow redeploys it on every push to `main` that touches
 the page. One-time setup: create a Netlify token
 (app.netlify.com → User settings → Applications) and
-`gh secret set NETLIFY_AUTH_TOKEN` — the site is created automatically on
+`gh secret set NETLIFY_AUTH_TOKEN`; the site is created automatically on
 first deploy.
 
 ## License

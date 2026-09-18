@@ -24,7 +24,7 @@ params ──► ReplayEngine ──► Surface ──► live app    # no LLM o
                  ReplayResult (closed typed contract)        evidence/ (redacted, generated)
 ```
 
-Judgment calls and why — one per §4 bullet:
+Judgment calls and why, one per §4 bullet:
 
 - **Language/runtime: Python + Playwright + pydantic + pytest, Hatchling
   build, uv env.** Python for the schema and the offline determinism suite;
@@ -58,10 +58,10 @@ Judgment calls and why — one per §4 bullet:
   JSON; configuration-armed faults; five identical replays in
   `evidence/replay-stability/`.
 - **Architecture: single process, sync, Protocols at every seam.** No
-  queues, services, or workers — explicitly unrewarded — with each seam
+  queues, services, or workers (explicitly unrewarded), with each seam
   testable offline (`FakePage`, `FakeLLM`, `ScriptedOperator`).
 - **UI-only by design.** Where an API exists, integrating through it is the
-  right call — out of scope here, so the mock exposes none and the system
+  right call; out of scope here, so the mock exposes none and the system
   never assumes one. This layer exists for the no-API long tail only.
 
 ## 2. Artifact schema
@@ -77,10 +77,10 @@ run id, cost, call count).
 
 Why shaped this way:
 
-- **Locators are role+name with fallbacks, not CSS/XPath** — the most stable
+- **Locators are role+name with fallbacks, not CSS/XPath**: the most stable
   identity a legacy surface offers, mirroring an AX tree. Name inference
   ignores `name`/`id` attributes and uses label, placeholder, title, or the
-  adjacent table cell — demonstrated live, where "Member ID" is named purely
+  adjacent table cell; demonstrated live, where "Member ID" is named purely
   from the neighboring `<td>`.
 - **Observations are not steps.** Replay re-observes fresh each step.
 - **Business outcomes are declared at approval, not discovered.** One
@@ -90,7 +90,7 @@ Why shaped this way:
   `cua approve` is where a human who knows the app declares them; `draft`
   artifacts are rejected for unattended replay by default.
 - **Outputs are redacted in all persisted evidence**, returned intact to the
-  in-process caller — the caller is entitled to the answer; the trail is not.
+  in-process caller: the caller is entitled to the answer; the trail is not.
 
 ## 3. Determinism & error handling
 
@@ -101,16 +101,16 @@ Then checkpoint, then extraction.
 
 `ReplayResult` is a closed enum:
 
-- **SUCCESS** — checkpoint passed; declared outputs extracted and returned.
-- **BUSINESS_OUTCOME** — a declared outcome matched at any step
-  (`NOT_FOUND`, `INVALID_INPUT`, `PERMISSION_DENIED` — the last covers the
+- **SUCCESS**: checkpoint passed; declared outputs extracted and returned.
+- **BUSINESS_OUTCOME**: a declared outcome matched at any step
+  (`NOT_FOUND`, `INVALID_INPUT`, `PERMISSION_DENIED`; the last covers the
   frozen record a teller role may not view). A legitimate answer, not a crash.
 - **Recoverable = engine policy, recorded never silent:** auto-dismissed JS
   `confirm()`s (`unexpected_dialog`); locator re-snapshot rematch; full wait
   budgets absorbing a deliberately slow page; a known-transient "System Busy"
-  page reloaded exactly once per step (`transient_reload`) — a second
+  page reloaded exactly once per step (`transient_reload`): a second
   consecutive busy page fails instead of looping.
-- **HARD_FAILURE** — app 5xx, session expiry, unresolvable locator, failed
+- **HARD_FAILURE**: app 5xx, session expiry, unresolvable locator, failed
   wait or checkpoint. Carries step id, expected vs observed (redacted page
   excerpt), and a screenshot.
 
@@ -125,27 +125,27 @@ stability).
 **Surface abstraction.** The seam is `PageSurface` + the element table: a
 legacy-web driver is the same JS over frameset children; a desktop driver
 maps the OS accessibility tree into the same model and "click" into an AX
-action. The schema is unchanged — locators already speak role+name. Honest
+action. The schema is unchanged: locators already speak role+name. Honest
 gap: pixel-only surfaces need an OCR front end feeding the same table.
 
 **Multi-tenant reuse.** Artifacts would gain an `app_signature` (product +
 major version, not tenant) and canonical parameterized routes
-(`/member/{member_id}` — already how waits are recorded; the one field that
+(`/member/{member_id}`, already how waits are recorded; the one field that
 cannot generalize as-is is the absolute `entry_url` origin, which would move
 into the per-tenant binding alongside it). Tenant differences
 (branding, renamed labels, extra interstitials) become an override layer:
 per-tenant locator aliases + recovery steps, resolved at replay start and
 recorded in evidence. Drift management: scheduled canary replays;
-`locator_unresolved` / `checkpoint_failed` is the drift signal — the same
-taxonomy, reused. Not built; the schema's shape —
-parameterized values, fallback locators, declared outcomes — is what makes it
+`locator_unresolved` / `checkpoint_failed` is the drift signal: the same
+taxonomy, reused. Not built; the schema's shape
+(parameterized values, fallback locators, declared outcomes) is what makes it
 possible without per-tenant re-recording.
 
 ## 5. Escalation & handoff
 
 Stuck detection: in replay, any hard failure after recovery attempts; in
 discovery, a no-change rule plus an optional Jev decision, two consecutive
-signals stopping the run — the community-validated "still making progress?"
+signals stopping the run: the community-validated "still making progress?"
 pattern, verified live (continue@0.78 while healthy). On trigger:
 
 1. **Detect & route.** `intervention.json`: capability, failed step, expected
@@ -153,12 +153,12 @@ pattern, verified live (continue@0.78 while healthy). On trigger:
 2. **Take over the live session.** Automation pauses; a `ControlSession`
    machine records every transition. The operator drives the **same surface
    instance** via a bare protocol (`goto`/`click`/`fill`/`look`/`resume`/
-   `abort`) — REPL for a human, script for evidence.
+   `abort`): REPL for a human, script for evidence.
 3. **Hand back.** `resume` returns control; replay continues from the failed
    step. Operator actions fold into `result.escalation` and recovery
    `operator_handoff`.
 
-Demonstrated: `evidence/replay-escalation-handoff/` — expiry fault, operator
+Demonstrated: `evidence/replay-escalation-handoff/`: expiry fault, operator
 re-authenticates and redoes the lookup live, run resumes and completes.
 
 ## 6. Safety
@@ -166,31 +166,31 @@ re-authenticates and redoes the lookup live, run resumes and completes.
 Default-deny allowlist enforced before **every** action in **both** loops:
 action types, origins + routes, risky-control patterns (e.g. the freeze
 button, irreversible without supervisor approval). A blocked attempt returns
-to the model as an observation and is logged — `evidence/vet-guard/` shows a
+to the model as an observation and is logged: `evidence/vet-guard/` shows a
 live model attempting the freeze, refused, correctly declining the goal. A
 post-action URL guard catches unexpected navigations.
 
 Data handling: SSNs, card-like numbers, amounts redacted from everything
-persisted and everything sent to the model — the loop never sees a raw SSN
+persisted and everything sent to the model: the loop never sees a raw SSN
 (test-asserted). Caller outputs return intact in process. `.env` is
 gitignored; artifacts hold placeholders, never credentials.
 
 **Limits:** role/name patterns suit a known app catalog, not the open web.
 The same pre-execution shape has field evidence of most-attacks caught,
-near-zero false blocks, at a fraction of a judge's cost — cited as
+near-zero false blocks, at a fraction of a judge's cost, cited as
 validation, not a new component. Dialog auto-dismissal suits interstitials,
-not consequential choices. Redaction is regex-based — including a PAN
+not consequential choices. Redaction is regex-based, including a PAN
 pattern that deliberately over-matches long digit runs (safe direction for
 fixtures; production would scope it at the schema layer). Model supply: Jev
 is days old, RLCD benchmarks thin, launch-week data terms not
-enterprise-grade — all inputs here are synthetic fixtures, and
+enterprise-grade: all inputs here are synthetic fixtures, and
 `CUA_DATA_COLLECTION=deny` opts into zero-retention endpoints.
 
 ## 7. Budgets, latency, cost
 
 Budgets are runtime posture, deliberately outside the artifact schema:
 `config/budgets.json` (typed, compiled defaults, `--budget group.key=value`
-overrides) is enforced — never advisory — and every replay result
+overrides) is enforced (never advisory) and every replay result
 self-describes its envelope (`result.json` gains `budgets.{in_effect,
 actuals}`). Breaches are typed failures with `budget exceeded` reasons.
 
@@ -209,16 +209,16 @@ request, moderation) never retried. Timeouts split connect 10s / read 60s
 | replay business outcome | 650 ms | 659 ms | fastest exit: 2 steps |
 | slow page absorbed (2.5 s fault) | 3.29 s | 3.34 s | ≈ fault delay + ε, wait budget absorbs it |
 | transient busy + reload | 748 ms | 818 ms | one reload ≈ +10% over baseline |
-| escalation cycle (scripted) | 4.66 s | — | dominated by operator actions, not engine |
-| server cold boot | 38 ms | — | trivial |
-| LLM call (live, JSON mode) | 2.03 s | — | 4 calls ≈ 8 s discovery; network RTT dominates |
-| discovery end-to-end (live) | 9.0 s | — | $0.0008, 4 LLM calls |
-| offline test suite | 21.7 s | — | 76 tests, no keys |
+| escalation cycle (scripted) | 4.66 s | | dominated by operator actions, not engine |
+| server cold boot | 38 ms | | trivial |
+| LLM call (live, JSON mode) | 2.03 s | | 4 calls ≈ 8 s discovery; network RTT dominates |
+| discovery end-to-end (live) | 9.0 s | | $0.0008, 4 LLM calls |
+| offline test suite | 21.7 s | | 76 tests, no keys |
 
 **Enforced budgets and headroom:** replay per-step wait 3s (observed p95
-under 1s; slow-fault pages use ~2.6s of it — deliberate), act timeout 10s,
+under 1s; slow-fault pages use ~2.6s of it, deliberate), act timeout 10s,
 whole-run 180s (≈45× observed max); discovery wall clock 600s, 40 steps,
-60 LLM calls, cost $0.50 (≈600× the $0.0008 observed run — a runaway loop
+60 LLM calls, cost $0.50 (≈600× the $0.0008 observed run; a runaway loop
 stops at cents, not dollars). Cost is enforced pre-call: breach stops the
 loop cleanly with a `budget exceeded` reason (test-asserted, as are the
 retry ladder and every cap above).
@@ -233,20 +233,20 @@ not by hope.
 
 Not built, with the next step if we continued:
 
-- **Operator console UI** — protocol + state machine are real; co-browsing is
+- **Operator console UI**: protocol + state machine are real; co-browsing is
   the natural next build.
-- **Multi-tenant overrides + canary fleet** — designed (§4); next is
+- **Multi-tenant overrides + canary fleet**: designed (§4); next is
   `app_signature` + per-tenant aliases on a second app variant.
-- **Desktop / frameset drivers** — the seam exists; a Linux AT-SPI driver
+- **Desktop / frameset drivers**: the seam exists; a Linux AT-SPI driver
   would be the first port.
-- **Jev beyond stuck detection**, capability catalog, codegen — the seams
+- **Jev beyond stuck detection**, capability catalog, codegen: the seams
   keep these additive without touching the engine.
-- **Parallelism, queues, services** — explicitly unrewarded; additive, not
+- **Parallelism, queues, services**: explicitly unrewarded; additive, not
   necessary.
 
 Built beyond the letter, cheaply: the 5× stability signal, the draft→approved
 gate (now a real ceremony: capability sheet, pre-approval dry-run validation,
-typed confirmation, ledgered decision — the approval-ceremony extension), and
+typed confirmation, ledgered decision, the approval-ceremony extension), and
 per-port fault servers so evidence regenerates cleanly.
 
 ---

@@ -43,7 +43,7 @@
 				replays <b>deterministically, with no LLM in the loop</b> — typed
 				inputs and outputs, a declared business-outcome contract, and a
 				human-in-the-loop escalation path that hands over the
-				<em>live session</em>, not a screenshot.
+				<em>live session</em> itself.
 			</p>
 
 			<div class="meta-row">
@@ -64,17 +64,17 @@
 					<h3>What is built</h3>
 					<ul class="clean">
 						<li><b>Discovery loop:</b> one typed JSON decision per observation against a numbered element table; stuck detection; clean compile to a draft artifact.</li>
-						<li><b>Approval ceremony:</b> capability sheet, dry-run validation, typed confirmation, ledger line — draft artifacts are rejected for unattended replay by default.</li>
+						<li><b>Approval ceremony:</b> capability sheet, dry-run validation, typed confirmation, ledger line; draft artifacts are rejected for unattended replay by default.</li>
 						<li><b>Deterministic replay:</b> fresh snapshot per step, locator re-resolution, post-condition waits, declared business outcomes, recovery ledger.</li>
 						<li><b>Escalation:</b> hard failure hands the <em>same live session</em> to a human operator; run resumes from the failed step.</li>
-						<li><b>Enforced budgets:</b> cost, steps, wall-clock, waits, and a network retry ladder — configuration, not hope.</li>
+						<li><b>Enforced budgets:</b> cost, steps, wall-clock, waits, and a network retry ladder, all in configuration.</li>
 					</ul>
 				</div>
 				<div class="panel">
 					<h3>What the evidence means</h3>
 					<ul class="clean">
 						<li><b>Measured:</b> a real model run discovered the capability ($0.000821, 4 calls); replay percentiles come from 5-run benchmarks (<code>cua bench</code>).</li>
-						<li><b>Proven by tests:</b> 76 offline tests — taxonomy, locators, guardrails, redaction, budgets, escalation — plus real-browser integration.</li>
+						<li><b>Proven by tests:</b> 76 offline tests (taxonomy, locators, guardrails, redaction, budgets, escalation) plus real-browser integration.</li>
 						<li><b>Scripted where honest:</b> the keyless demo uses a scripted discovery stand-in, labeled as such; live runs sit beside it.</li>
 						<li><b>Designed only:</b> multi-tenant canary fleet and desktop/AT-SPI drivers are design (DESIGN.md §4), not code.</li>
 					</ul>
@@ -99,7 +99,7 @@
 					<defs>
 						<marker id="arrow-a" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3.5 L0,7 Z" fill="#125ded"></path></marker>
 					</defs>
-					<text x="24" y="34" fill="#5a5f68" font-size="15" font-weight="bold">Lane 1 — discovery (LLM, once)</text>
+					<text x="24" y="34" fill="#5a5f68" font-size="15" font-weight="bold">Lane 1: discovery (LLM, once)</text>
 					<rect x="24" y="60" width="170" height="96" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
 					<text x="44" y="92" fill="#121212" font-size="15" font-weight="bold">goal + params</text>
 					<text x="44" y="116" fill="#5a5f68" font-size="12">"look up {member_id}"</text>
@@ -137,7 +137,7 @@
 					<path d="M873 188 L873 250 L500 250 L500 296" fill="none" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></path>
 					<text x="520" y="242" fill="#5a5f68" font-size="12">approved artifact only</text>
 
-					<text x="24" y="300" fill="#5a5f68" font-size="15" font-weight="bold">Lane 2 — replay (no LLM, every run)</text>
+					<text x="24" y="300" fill="#5a5f68" font-size="15" font-weight="bold">Lane 2: replay (no LLM, every run)</text>
 					<rect x="24" y="316" width="170" height="96" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
 					<text x="44" y="348" fill="#121212" font-size="15" font-weight="bold">params</text>
 					<text x="44" y="372" fill="#5a5f68" font-size="12">member_id=1002 …</text>
@@ -174,7 +174,7 @@
 
 			<div class="note" style="margin-top: var(--s3)">
 				<b>Design decision:</b> locators reference the normalized element model
-				(role + accessible name with fallbacks), never raw CSS/XPath — the same
+				(role + accessible name with fallbacks), never raw CSS/XPath; the same
 				shape works for a web DOM, a frameset page, or a desktop accessibility
 				tree. Only the <code>PageSurface</code> module knows a browser exists.
 			</div>
@@ -184,14 +184,14 @@
 	<section id="artifact">
 		<div class="wrap">
 			<span class="eyebrow">Artifact v1</span>
-			<h2>A typed contract, not a recording.</h2>
+			<h2>Typed, versioned, replayable.</h2>
 			<div class="cols2">
 				<div class="panel">
 					<h3>Shape</h3>
 					<table>
-						<tr><td class="k"><code>inputs</code></td><td>typed parameters with examples — <code>{member_id}</code> resolves anywhere it appears.</td></tr>
+						<tr><td class="k"><code>inputs</code></td><td>typed parameters with examples: <code>{member_id}</code> resolves anywhere it appears.</td></tr>
 						<tr><td class="k"><code>steps</code></td><td>state-changing actions only (goto / click / fill / press_enter), each with rationale and an optional post-condition wait.</td></tr>
-						<tr><td class="k"><code>outcomes</code></td><td>declared business results (NOT_FOUND, INVALID_INPUT, PERMISSION_DENIED…) with detect conditions — declared by a human at approval, never guessed from one run.</td></tr>
+						<tr><td class="k"><code>outcomes</code></td><td>declared business results (NOT_FOUND, INVALID_INPUT, PERMISSION_DENIED…) with detect conditions, declared by a human at approval, never guessed from one run.</td></tr>
 						<tr><td class="k"><code>checkpoint</code></td><td>the final-state assertion that must hold for SUCCESS.</td></tr>
 						<tr><td class="k"><code>outputs</code></td><td>regex-extracted values the caller receives.</td></tr>
 					</table>
@@ -201,7 +201,7 @@
 					<ul class="clean">
 						<li><b>Draft:</b> compiled from a successful discovery trace, provenance attached (model, cost, calls).</li>
 						<li><b>Approval:</b> a human reviews the capability sheet, declares outcomes, passes dry-run validation, types the confirmation; the decision is ledgered.</li>
-						<li><b>Replay:</b> unattended execution requires <code>approved</code> status — drafts are refused by default.</li>
+						<li><b>Replay:</b> unattended execution requires <code>approved</code> status; drafts are refused by default.</li>
 						<li><b>Drift:</b> locator failures and checkpoint misses are the drift signal; the recovery ledger says which run absorbed what.</li>
 					</ul>
 				</div>
@@ -216,24 +216,24 @@
 			<p class="sub">
 				Business outcomes are answers, not failures; recoverable conditions are
 				engine policy; everything else is a hard failure. The demo matrix runs
-				the same approved artifact against deliberate faults — every row below is
+				the same approved artifact against deliberate faults: every row below is
 				a committed run under <code>evidence/</code>.
 			</p>
 			<div class="panel" style="margin-top: var(--s3); overflow-x: auto;">
 				<table>
-					<tr><td class="k">success ×2</td><td>members 1001 / 1002 — checkpoint holds, outputs extracted. Same artifact, different params.</td><td class="k" style="text-align:right">SUCCESS</td></tr>
-					<tr><td class="k">not-found</td><td>member 9999 — declared outcome, returns a message payload.</td><td class="k" style="text-align:right">BUSINESS_OUTCOME</td></tr>
-					<tr><td class="k">invalid-input</td><td>member "401a" — declared outcome, no crash.</td><td class="k" style="text-align:right">BUSINESS_OUTCOME</td></tr>
-					<tr><td class="k">permission-denied</td><td>frozen member 1005 — declared outcome.</td><td class="k" style="text-align:right">BUSINESS_OUTCOME</td></tr>
-					<tr><td class="k">slow page (2.5 s)</td><td>member 1006 — post-condition wait absorbs the delay, p50 3.29 s.</td><td class="k" style="text-align:right">SUCCESS</td></tr>
-					<tr><td class="k">transient busy page</td><td>member 1002 — one recorded reload, then done.</td><td class="k" style="text-align:right">SUCCESS · 1 recovery</td></tr>
-					<tr><td class="k">server error</td><td>member 1003 — HTTP 500 on the member page.</td><td class="k" style="text-align:right">HARD_FAILURE @ step 0</td></tr>
-					<tr><td class="k">session expiry</td><td>member 1002 — hard failure escalated to an operator, run resumes and completes.</td><td class="k" style="text-align:right">ESCALATED → SUCCESS</td></tr>
+					<tr><td class="k">success ×2</td><td>members 1001 / 1002: checkpoint holds, outputs extracted. Same artifact, different params.</td><td class="k" style="text-align:right">SUCCESS</td></tr>
+					<tr><td class="k">not-found</td><td>member 9999: declared outcome, returns a message payload.</td><td class="k" style="text-align:right">BUSINESS_OUTCOME</td></tr>
+					<tr><td class="k">invalid-input</td><td>member "401a": declared outcome, no crash.</td><td class="k" style="text-align:right">BUSINESS_OUTCOME</td></tr>
+					<tr><td class="k">permission-denied</td><td>frozen member 1005: declared outcome.</td><td class="k" style="text-align:right">BUSINESS_OUTCOME</td></tr>
+					<tr><td class="k">slow page (2.5 s)</td><td>member 1006: post-condition wait absorbs the delay, p50 3.29 s.</td><td class="k" style="text-align:right">SUCCESS</td></tr>
+					<tr><td class="k">transient busy page</td><td>member 1002: one recorded reload, then done.</td><td class="k" style="text-align:right">SUCCESS · 1 recovery</td></tr>
+					<tr><td class="k">server error</td><td>member 1003: HTTP 500 on the member page.</td><td class="k" style="text-align:right">HARD_FAILURE @ step 0</td></tr>
+					<tr><td class="k">session expiry</td><td>member 1002: hard failure escalated to an operator, run resumes and completes.</td><td class="k" style="text-align:right">ESCALATED → SUCCESS</td></tr>
 				</table>
 			</div>
 			<div class="note" style="margin-top: var(--s3)">
 				<b>Stability:</b> five consecutive replays produce byte-identical result
-				signatures — determinism is asserted, not assumed.
+				signatures: determinism is asserted, not assumed.
 			</div>
 		</div>
 	</section>
@@ -246,7 +246,7 @@
 				<div class="panel">
 					<h3>Pre-execution guardrails</h3>
 					<ul class="clean">
-						<li><b>Allowlist:</b> action types, origins + routes, risky-control patterns. The freeze button is forbidden as irreversible — in discovery <em>and</em> replay <em>and</em> operator commands.</li>
+						<li><b>Allowlist:</b> action types, origins + routes, risky-control patterns. The freeze button is forbidden as irreversible, in discovery, replay, and operator commands alike.</li>
 						<li><b>Live proof:</b> <code>evidence/vet-guard/</code> is a real model run told to freeze accounts: it navigates there, is refused, and declines the unsafe goal.</li>
 						<li><b>Post-action URL guard:</b> unexpected navigations fail loud.</li>
 					</ul>
@@ -254,7 +254,7 @@
 				<div class="panel">
 					<h3>Data handling</h3>
 					<ul class="clean">
-						<li><b>Redaction:</b> SSNs, card-like numbers, and amounts are scrubbed from everything persisted and everything sent to the model — the loop never sees a raw SSN (test-asserted).</li>
+						<li><b>Redaction:</b> SSNs, card-like numbers, and amounts are scrubbed from everything persisted and everything sent to the model: the loop never sees a raw SSN (test-asserted).</li>
 						<li><b>Credentials:</b> artifacts hold placeholders; <code>.env</code> is gitignored; caller outputs return intact in-process only.</li>
 						<li><b>Privacy posture:</b> <code>CUA_DATA_COLLECTION=deny</code> routes model calls to zero-retention endpoints.</li>
 					</ul>
@@ -271,7 +271,7 @@
 				<div class="qc">
 					<div class="n">1 · Detect</div>
 					<h3>Hard failure, recovery budget spent</h3>
-					<p>The engine stops, writes <code>intervention.json</code> — what was expected, what was observed, page snapshot, screenshot — and hands over control of the session it was driving.</p>
+					<p>The engine stops, writes <code>intervention.json</code> (expected vs observed, page snapshot, screenshot) and hands over control of the session it was driving.</p>
 				</div>
 				<div class="qc">
 					<div class="n">2 · Intervene</div>
@@ -285,8 +285,8 @@
 				</div>
 			</div>
 			<div class="note" style="margin-top: var(--s3)">
-				<b>Measured:</b> the scripted escalation cycle — expire, hand off, drive,
-				resume, complete — runs end-to-end in 4.66 s
+				<b>Measured:</b> the scripted escalation cycle (expire, hand off, drive,
+				resume, complete) runs end-to-end in 4.66 s
 				(<code>evidence/replay-escalation-handoff/</code>). The mechanism is real;
 				the operator console UI is deliberately not built.
 			</div>
@@ -298,7 +298,7 @@
 			<span class="eyebrow">Budgets, latency, cost</span>
 			<h2>Measured baselines beside enforced caps.</h2>
 			<p class="sub">
-				Budgets are runtime posture — typed configuration
+				Budgets are runtime posture: typed configuration
 				(<code>config/budgets.json</code>), enforced, never advisory. Every replay
 				result self-describes its envelope. Breaches are typed failures with
 				<code>budget exceeded</code> reasons, test-asserted.
@@ -326,8 +326,8 @@
 						<tr><td class="k">replay act</td><td>10 s per browser action</td></tr>
 						<tr><td class="k">replay total</td><td>180 s ≈ 45× observed max</td></tr>
 						<tr><td class="k">network ladder</td><td>3 attempts · backoff 0.5/1.0 s · <code>Retry-After</code> honored (capped 30 s)</td></tr>
-						<tr><td class="k">timeouts</td><td>connect 10 s · read 60 s · write 30 s — dead networks fail in seconds</td></tr>
-						<tr><td class="k">never retried</td><td>4xx client errors (bad key, bad request) — raise immediately</td></tr>
+						<tr><td class="k">timeouts</td><td>connect 10 s · read 60 s · write 30 s: dead networks fail in seconds</td></tr>
+						<tr><td class="k">never retried</td><td>4xx client errors (bad key, bad request): raise immediately</td></tr>
 					</table>
 				</div>
 			</div>
@@ -345,8 +345,8 @@
 			<h2>What is real, what is scripted, what is designed.</h2>
 			<div class="panel" style="overflow-x:auto">
 				<table>
-					<tr><td class="k">Real</td><td>Discovery loop, replay engine, taxonomy, guardrails, redaction, escalation mechanism, budgets, retry ladder — with 76 offline + real-browser tests. Live model runs: discovery ($0.000821) and the guardrail refusal.</td></tr>
-					<tr><td class="k">Scripted</td><td>The keyless demo's discovery stand-in — labeled as such in every artifact it produces.</td></tr>
+					<tr><td class="k">Real</td><td>Discovery loop, replay engine, taxonomy, guardrails, redaction, escalation mechanism, budgets, retry ladder, covered by 76 offline + real-browser tests. Live model runs: discovery ($0.000821) and the guardrail refusal.</td></tr>
+					<tr><td class="k">Scripted</td><td>The keyless demo's discovery stand-in, labeled as such in every artifact it produces.</td></tr>
 					<tr><td class="k">Mock by design</td><td>The target app: a deliberately hostile credit-union console (no test IDs, non-semantic markup, JS-confirm on the irreversible action, fault injection).</td></tr>
 					<tr><td class="k">Designed only</td><td>Multi-tenant canary fleet, desktop/AT-SPI driver, operator console UI (DESIGN.md §4, §8).</td></tr>
 					<tr><td class="k">Not hidden</td><td>Every claim on this page cites a committed run under <code>evidence/</code>; anything without one is labeled designed.</td></tr>
@@ -362,7 +362,7 @@
 			<div class="obj" style="margin-top: var(--s3); text-align: left; padding: var(--s4); line-height: 1.7">
 				<span class="c"># install</span><br />
 				uv sync<br /><br />
-				<span class="c"># full offline suite — 76 tests, no keys</span><br />
+				<span class="c"># full offline suite: 76 tests, no keys</span><br />
 				uv run pytest -q<br /><br />
 				<span class="c"># matrix + escalation + stability, regenerates committed evidence</span><br />
 				uv run cua demo --part all<br /><br />
@@ -386,9 +386,9 @@
 			</p>
 			<div class="dockcards">
 				<a class="dock" href="https://github.com/aryaminus/cua/blob/main/README.md" target="_blank" rel="noopener"><span class="fname">README.md</span><small>Quick start, demo path, layout, what is real vs mocked.</small><span class="gh-hint">View on GitHub ↗</span></a>
-				<a class="dock" href="https://github.com/aryaminus/cua/blob/main/DESIGN.md" target="_blank" rel="noopener"><span class="fname">DESIGN.md</span><small>Eight-section design write-up — every claim backed by a run.</small><span class="gh-hint">View on GitHub ↗</span></a>
+				<a class="dock" href="https://github.com/aryaminus/cua/blob/main/DESIGN.md" target="_blank" rel="noopener"><span class="fname">DESIGN.md</span><small>Eight-section design write-up. Every claim backed by a run.</small><span class="gh-hint">View on GitHub ↗</span></a>
 				<a class="dock" href="https://github.com/aryaminus/cua/blob/main/evidence/README.md" target="_blank" rel="noopener"><span class="fname">evidence/README.md</span><small>Evidence index: live runs, fault matrix, escalation, stability, benchmarks.</small><span class="gh-hint">View on GitHub ↗</span></a>
-				<a class="dock" href="https://github.com/aryaminus/cua/blob/main/evidence/performance/bench.json" target="_blank" rel="noopener"><span class="fname">evidence/performance/</span><small>Committed benchmark output — the percentiles quoted above.</small><span class="gh-hint">View on GitHub ↗</span></a>
+				<a class="dock" href="https://github.com/aryaminus/cua/blob/main/evidence/performance/bench.json" target="_blank" rel="noopener"><span class="fname">evidence/performance/</span><small>Committed benchmark output: the percentiles quoted above.</small><span class="gh-hint">View on GitHub ↗</span></a>
 				<a class="dock" href="https://github.com/aryaminus/cua/blob/main/config/budgets.json" target="_blank" rel="noopener"><span class="fname">config/budgets.json</span><small>Enforced runtime budgets: timeouts, retries, cost and step caps.</small><span class="gh-hint">View on GitHub ↗</span></a>
 				<a class="dock" href="https://github.com/aryaminus/cua/blob/main/config/allowlist.json" target="_blank" rel="noopener"><span class="fname">config/allowlist.json</span><small>Default-deny allowlist: origins, routes, actions, forbidden controls.</small><span class="gh-hint">View on GitHub ↗</span></a>
 				<a class="dock" href="https://github.com/aryaminus/cua/blob/main/evidence/discovery-live/meta.json" target="_blank" rel="noopener"><span class="fname">evidence/discovery-live/</span><small>The real model run: provenance, cost, calls, draft artifact.</small><span class="gh-hint">View on GitHub ↗</span></a>
