@@ -1,0 +1,13 @@
+{
+  "status": "SUCCESS",
+  "steps_executed": 3,
+  "finished_at": "2026-09-18T16:30:07+00:00",
+  "stability": {
+    "runs": 5,
+    "identical": true,
+    "signatures": [
+      "SUCCESS outputs=['savings_balance']"
+    ]
+  },
+  "started_at": "2026-09-18T16:29:59+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "mode": "replay-matrix",
+  "case": "business-invalid-input",
+  "params": {
+    "member_id": "401a"
+  },
+  "env": {},
+  "started_at": "2026-09-18T16:29:54+00:00",
+  "status": "BUSINESS_OUTCOME",
+  "steps_executed": 3,
+  "finished_at": "2026-09-18T16:29:55+00:00"
+}

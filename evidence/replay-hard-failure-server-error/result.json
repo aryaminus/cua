@@ -1,0 +1,20 @@
+{
+  "artifact": "lookup_up_member_and",
+  "params_redacted": {
+    "member_id": "1003"
+  },
+  "status": "HARD_FAILURE",
+  "outputs": {},
+  "outcome_id": null,
+  "failure": {
+    "step_id": 0,
+    "action": "-",
+    "expected": "checkpoint: page shows 'Member Detail'",
+    "observed": "not observed on final state",
+    "screenshot": "evidence/replay-hard-failure-server-error/steps/000-failure.png"
+  },
+  "recoveries": [],
+  "escalation": null,
+  "steps_executed": 3,
+  "duration_ms": 753
+}

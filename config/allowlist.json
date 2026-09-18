@@ -1,0 +1,13 @@
+{
+  "origins": ["http://127.0.0.1:8791"],
+  "routes": ["/", "/search", "/lookup", "/member/*"],
+  "actions": ["goto", "click", "fill", "press_enter", "read"],
+  "risky_policy": "block",
+  "forbidden_elements": [
+    {
+      "role": "button",
+      "name_contains": "freeze",
+      "class": "irreversible: freezes all member accounts, requires supervisor approval"
+    }
+  ]
+}

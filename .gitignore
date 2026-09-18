@@ -1,0 +1,27 @@
+# ControlKeel managed (do not edit) - artifacts that must not be committed
+/controlkeel/
+/.controlkeel/
+/.agents/skills/
+# End ControlKeel managed
+
+# Local reference material (not distributed)
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Evidence: commit curated runs referenced by README/REPORT; ignore bulky scratch
+evidence/scratch/
+
+# Operator session state
+*.operator-session.json

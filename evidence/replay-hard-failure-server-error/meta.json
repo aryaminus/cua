@@ -1,0 +1,14 @@
+{
+  "mode": "replay-matrix",
+  "case": "hard-failure-server-error",
+  "params": {
+    "member_id": "1003"
+  },
+  "env": {
+    "MOCKAPP_FAULT": "server_error_member_1003"
+  },
+  "started_at": "2026-09-18T16:29:55+00:00",
+  "status": "HARD_FAILURE",
+  "steps_executed": 3,
+  "finished_at": "2026-09-18T16:29:56+00:00"
+}

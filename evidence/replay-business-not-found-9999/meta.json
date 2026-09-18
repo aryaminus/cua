@@ -1,0 +1,12 @@
+{
+  "mode": "replay-matrix",
+  "case": "business-not-found-9999",
+  "params": {
+    "member_id": "9999"
+  },
+  "env": {},
+  "started_at": "2026-09-18T16:29:52+00:00",
+  "status": "BUSINESS_OUTCOME",
+  "steps_executed": 3,
+  "finished_at": "2026-09-18T16:29:53+00:00"
+}

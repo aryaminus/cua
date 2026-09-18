@@ -1,0 +1,14 @@
+{
+  "mode": "escalation-demo",
+  "params": {
+    "member_id": "1002"
+  },
+  "env": {
+    "MOCKAPP_SESSION_TTL": "2"
+  },
+  "note": "session expiry forces hard failure; operator takes the live session",
+  "started_at": "2026-09-18T16:29:57+00:00",
+  "status": "SUCCESS",
+  "steps_executed": 6,
+  "finished_at": "2026-09-18T16:29:59+00:00"
+}

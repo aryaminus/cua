@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0",
+  "capability_name": "lookup_up_member_and",
+  "description": "Discovered from goal: Look up member {member_id} and report their current savings balance",
+  "app": "meridian-fcu/memberserv (mock)",
+  "entry_url": "http://127.0.0.1:8791/search",
+  "status": "approved",
+  "inputs": [
+    {
+      "name": "member_id",
+      "type": "string",
+      "required": true,
+      "description": "member number to look up",
+      "example": "1001"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "savings_balance",
+      "type": "string",
+      "description": "",
+      "extract": {
+        "kind": "regex",
+        "pattern": "Savings\\s*\\$([\\d,]+\\.\\d{2})",
+        "group": 1
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": 1,
+      "action": "goto",
+      "target": null,
+      "value": "http://127.0.0.1:8791/search",
+      "wait": null,
+      "rationale": "entry point for member lookup"
+    },
+    {
+      "id": 2,
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": "Member ID",
+        "fallbacks": [
+          {
+            "kind": "tag_ordinal",
+            "tag": "input",
+            "ordinal": 0
+          }
+        ]
+      },
+      "value": "{member_id}",
+      "wait": null,
+      "rationale": "parameterized member id goes in the only textbox"
+    },
+    {
+      "id": 3,
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Search",
+        "fallbacks": [
+          {
+            "kind": "tag_ordinal",
+            "tag": "input",
+            "ordinal": 0
+          }
+        ]
+      },
+      "value": null,
+      "wait": {
+        "url_contains": "/member/{member_id}",
+        "text_contains": null,
+        "element_present": null
+      },
+      "rationale": "Search submits the lookup form"
+    }
+  ],
+  "checkpoint": {
+    "url_contains": null,
+    "text_contains": "Member Detail",
+    "element_present": null
+  },
+  "outcomes": [
+    {
+      "id": "NOT_FOUND",
+      "description": "No member exists for the requested ID — a legitimate answer, not a failure.",
+      "detect": {
+        "url_contains": null,
+        "text_contains": "No member found",
+        "element_present": null
+      },
+      "returns": {
+        "message": "No member found for ID {member_id}"
+      }
+    },
+    {
+      "id": "INVALID_INPUT",
+      "description": "The supplied ID failed validation (non-numeric).",
+      "detect": {
+        "url_contains": null,
+        "text_contains": "Member ID must be numeric",
+        "element_present": null
+      },
+      "returns": {
+        "message": "Invalid member ID supplied ({member_id})"
+      }
+    }
+  ],
+  "provenance": {
+    "run_id": "discovery-offline",
+    "recorded_at": "2026-09-18T16:29:49Z",
+    "model": "fake-llm",
+    "decisions_model": null,
+    "steps_llm_calls": 4,
+    "cost_usd": 0.0
+  }
+}
