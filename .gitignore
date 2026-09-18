@@ -4,8 +4,6 @@
 /.agents/skills/
 # End ControlKeel managed
 
-# Local reference material (not distributed)
-
 # Python
 __pycache__/
 *.py[cod]

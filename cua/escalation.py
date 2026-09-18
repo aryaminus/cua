@@ -1,7 +1,7 @@
 """Human-in-the-loop escalation and live-session handoff.
 
 The mechanism is real even though the operator surface is deliberately bare
-(the spec's scope note allows exactly this):
+(the mechanism, not the chrome, is the point):
 
   1. Detect stuck/blocked (replay: hard failure after recovery attempts;
      discovery: no-progress rules + an optional Jev decision).
@@ -16,8 +16,7 @@ The mechanism is real even though the operator surface is deliberately bare
 
 Control-state machine: AUTOMATION -> HUMAN -> AUTOMATION (or ABORTED).
 Who holds control is a single field on the session, written on every
-transition — that is the "who is in control" seam the spec asks to make
-explicit.
+transition — that is the "who is in control" seam made explicit.
 
 Operator commands (the bare operator surface; ScriptedOperator replays what a
 human would type, TerminalOperator reads stdin):

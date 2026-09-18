@@ -6,12 +6,12 @@ produced it. An AI agent (or a human operator) should be able to read an
 artifact and know exactly what the capability does, what it needs, and what it
 returns — without reading any LLM output.
 
-Design notes (rationale is expanded in REPORT.md):
+Design notes (rationale is expanded in DESIGN.md):
 
 - Locators reference the *normalized element model* (role + accessible name)
   with explicit fallbacks, not raw CSS/XPath. Same shape works for a clean web
   DOM, a frameset-era page, or an accessibility tree on a desktop app — that is
-  the surface seam (brief §3.7).
+  the surface seam (DESIGN.md §1).
 - Steps are state-changing actions only (goto / click / fill / press_enter).
   Observations are not steps: replay re-observes fresh at every step instead of
   trusting recorded screen state.
@@ -20,7 +20,7 @@ Design notes (rationale is expanded in REPORT.md):
 - Business outcomes ("no such member") are declared by the artifact with detect
   conditions; recoverable conditions (dialogs, transient loads) are engine
   policy; anything else is a hard failure. Conflating these is the classic
-  mistake the spec warns about.
+  mistake this taxonomy exists to prevent.
 - ``value`` / detect patterns may reference ``{param}`` names, resolved from
   ``inputs`` at replay time — that is what makes a recording a *parameterized
   capability* rather than a scripted demo.
@@ -244,7 +244,7 @@ class EscalationRecord(BaseModel):
 
 
 class ReplayResult(BaseModel):
-    """The closed result contract callers receive (brief §3.3):
+    """The closed result contract callers receive (DESIGN.md §3):
 
     - SUCCESS: checkpoint passed; declared outputs extracted and returned.
     - BUSINESS_OUTCOME: a declared outcome matched (e.g. NOT_FOUND) — a

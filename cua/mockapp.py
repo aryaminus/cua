@@ -1,6 +1,6 @@
 """MemberServ — a mock legacy credit-union back-office console.
 
-Stand-in for the real environment (Section 1 of the spec): server-rendered,
+Stand-in for a real legacy environment: server-rendered,
 table-based layout, non-semantic markup, no test IDs, no label/input
 association, JS-confirm dialogs on the irreversible action. Deterministic seed
 data; fault injection via environment variables so evidence runs are

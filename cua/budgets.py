@@ -6,7 +6,7 @@ describe how we are willing to run it here. Defaults are compiled in so the
 config file is optional; `config/budgets.json` overrides, and
 `--budget group.key=value` overrides on the command line ( loudest wins ).
 
-Rationale for each default is in REPORT.md §6 "Budgets, latency, cost".
+Rationale for each default is in DESIGN.md §7 "Budgets, latency, cost".
 """
 
 from __future__ import annotations

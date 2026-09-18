@@ -4,7 +4,7 @@ One key (OPENROUTER_API_KEY) covers both. Jev (typesafe/jev-*) is exposed via
 POST /api/alpha/decisions with the Choice/Noul/Score question shapes — a
 non-generative decision model returning calibrated probabilities. We use it
 for exactly one thing: stuck/no-progress detection during discovery (see
-REPORT.md §Architecture for why not more).
+DESIGN.md §1 for why not more).
 """
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ class OpenRouter:
         self.spent_usd = 0.0
         self.latencies_s: list[float] = []  # per chat call, after retries
         self.retries: int = 0  # transport/5xx/429 retries actually performed
-        # Optional privacy posture (see REPORT.md §Safety): when
+        # Optional privacy posture (see DESIGN.md §6): when
         # CUA_DATA_COLLECTION=deny, OpenRouter routes only to providers that do
         # not retain prompts. Off by default — it can exclude cheaper providers.
         dc = os.environ.get("CUA_DATA_COLLECTION", "").strip().lower()

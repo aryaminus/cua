@@ -9,14 +9,13 @@ deterministically with no LLM in the loop**, with typed inputs/outputs, a
 declared business-outcome contract, and a human-in-the-loop escalation path
 that hands over the *live session*.
 
-The target
-surface is a bundled mock of the real environment described in the spec: a
+The bundled target is a deliberately hostile practice surface: a
 server-rendered, table-based "credit-union back-office console" — no test IDs,
 no label association, non-semantic markup, JS-confirm dialogs on the
 irreversible action, and deterministic fault injection (not-found, validation
 error, session expiry, server error).
 
-Design write-up: **[REPORT.md](REPORT.md)** · Run evidence: **[evidence/](evidence/)**
+Design write-up: **[DESIGN.md](DESIGN.md)** · Run evidence: **[evidence/](evidence/)**
 
 ## Quick start
 
@@ -78,7 +77,7 @@ uv run cua demo --part escalation
 **Latency/cost benchmark** (offline replay percentiles, escalation cycle,
 server boot; `--live` adds 3 LLM probes ≈ $0.00003; `--tests` times the
 suite — writes `evidence/performance/bench.json`, the baseline behind
-REPORT.md §7):
+DESIGN.md §7):
 
 ```bash
 uv run cua bench --runs 5 --live --tests
@@ -86,7 +85,7 @@ uv run cua bench --runs 5 --live --tests
 
 **Guardrail refusal demo** (a live model told to perform the irreversible
 freeze — it navigates there, is refused by the allowlist, and declines the
-unsafe goal; see REPORT.md §Safety):
+unsafe goal; see DESIGN.md §6):
 
 ```bash
 uv run cua discover --goal "Freeze all accounts for member {member_id}" \
@@ -122,10 +121,10 @@ cua/
   openrouter.py   chat completions + OpenRouter Decisions API (typesafe/jev)
   cli.py          serve / discover / approve / replay / demo / bench
 config/allowlist.json   origins, routes, action types, risky-control patterns
-config/budgets.json     runtime budgets: timeouts, retries, cost/steps caps (REPORT.md §7)
+config/budgets.json     runtime budgets: timeouts, retries, cost/steps caps (DESIGN.md §7)
 tests/            76 tests: offline engine suite + real-browser integration
 evidence/         generated run records (see evidence/README.md)
-REPORT.md         the eight-section design write-up
+DESIGN.md         the eight-section design write-up
 ```
 
 ## Configuration
@@ -142,12 +141,12 @@ See [`.env.example`](.env.example): `OPENROUTER_API_KEY` (discovery only),
 | Piece | Status |
 |---|---|
 | Discovery loop, replay engine, taxonomy, guardrails, redaction, escalation mechanism | real (this repo) |
-| Target application | mock by design — a deliberate stand-in for the bank back-office surface (brief §4) |
+| Target application | mock by design — a deliberate stand-in for a bank back-office surface |
 | Live discovery run in `evidence/discovery-live/` | real OpenRouter model run (provenance in `meta.json`) |
 | Guardrail-refusal run in `evidence/vet-guard/` | real OpenRouter model run: the model attempts the irreversible freeze, the allowlist refuses, the model declines the unsafe goal |
 | Offline discovery (`evidence/discovery-offline/`) | scripted stand-in, clearly labeled — for keyless demos |
-| Operator UI | deliberately bare: a command protocol (file/script/terminal), per the spec's scope note |
-| Multi-tenant / desktop surfaces | design only (REPORT.md §4) — not built, per the spec |
+| Operator UI | deliberately bare: a command protocol (file/script/terminal) — the mechanism, not the chrome, is the point |
+| Multi-tenant / desktop surfaces | design only (DESIGN.md §4) — not built |
 
 ## License
 

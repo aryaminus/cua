@@ -521,7 +521,7 @@ def _stats(ms: list[int]) -> dict:
 
 
 def cmd_bench(args) -> None:
-    """Latency/cost benchmark: baseline numbers behind REPORT.md §6.
+    """Latency/cost benchmark: baseline numbers behind DESIGN.md §7.
 
     Offline by default (replay cases, escalation cycle, server boot). --live
     adds three minimal LLM probes (~$0.0002) for API latency; --tests times

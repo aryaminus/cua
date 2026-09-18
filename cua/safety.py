@@ -13,7 +13,7 @@ Model (default-deny):
   4. After any action, the live URL must still match an allowed route
      (navigation guard — catches redirects to unexpected surfaces).
 
-Limits (documented in REPORT.md §Safety): element risk is classified by
+Limits (documented in DESIGN.md §6): element risk is classified by
 declared role/name patterns, not by resolving form targets — appropriate for a
 known back-office app catalog, not for open-web automation.
 """

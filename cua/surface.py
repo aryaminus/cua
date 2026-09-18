@@ -2,8 +2,8 @@
 
 Everything above this module speaks in terms of a numbered element table
 (role, accessible-name approximation, value) and typed actions. Only this
-module knows there is a browser underneath. That is the seam the spec's §3.7
-asks for: a legacy frameset page, an accessibility-tree driver, or an OS-level
+module knows there is a browser underneath. That is the seam the design
+depends on: a legacy frameset page, an accessibility-tree driver, or an OS-level
 driver would implement the same :class:`PageSurface` protocol without touching
 the artifact schema, replay engine, or escalation logic.
 

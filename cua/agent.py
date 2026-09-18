@@ -1,6 +1,6 @@
 """Goal-driven discovery: an LLM figures the flow out once; we record it.
 
-Loop (brief §3.1): accept goal + target; observe -> decide -> act against a
+Loop (DESIGN.md §1): accept goal + target; observe -> decide -> act against a
 live surface until goal met or a stopping condition hits (max steps, timeout,
 dead-end/stuck, hard guard block). The model sees a numbered element table —
 the same normalized element model replay uses — never raw HTML, never pixels,
@@ -460,7 +460,7 @@ class DiscoveryAgent:
             outputs=outputs,
             steps=steps,
             checkpoint=Check(text_contains=verify_text),
-            outcomes=[],  # declared at approval time — see REPORT.md §Artifact schema
+            outcomes=[],  # declared at approval time — see DESIGN.md §2
             provenance=Provenance(
                 run_id=run_id,
                 recorded_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

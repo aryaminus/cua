@@ -1,6 +1,6 @@
-# Design Report
+# Design
 
-Seven sections, per the spec. Every claim is backed by a run under
+Eight sections. Every claim is backed by a run under
 `evidence/`; the boundary table at the end says what is real, scripted, or
 designed-only.
 
@@ -24,13 +24,13 @@ params ──► ReplayEngine ──► Surface ──► live app    # no LLM o
                  ReplayResult (closed typed contract)        evidence/ (redacted, generated)
 ```
 
-Judgment calls the spec leaves open, and why — one per §4 bullet:
+Judgment calls and why — one per §4 bullet:
 
 - **Language/runtime: Python + Playwright + pydantic + pytest, Hatchling
   build, uv env.** Python for the schema and the offline determinism suite;
   sync Playwright for a single-process loop with no async machinery; uv for
   one-command reproducibility. A second language or service tier adds moving
-  parts with no new brief coverage.
+  parts the core seams do not need.
 - **LLM provider: OpenRouter, deepseek-v4.1-flash.** One key serves the chat
   loop and the Jev decisions endpoint. Loop structure: one typed JSON
   decision per observation (never free text), `reasoning: disabled` plus the
@@ -60,8 +60,8 @@ Judgment calls the spec leaves open, and why — one per §4 bullet:
 - **Architecture: single process, sync, Protocols at every seam.** No
   queues, services, or workers — explicitly unrewarded — with each seam
   testable offline (`FakePage`, `FakeLLM`, `ScriptedOperator`).
-- **UI-only by design.** Where an API exists the spec says to integrate
-  through it — out of scope here, so the mock exposes none and the system
+- **UI-only by design.** Where an API exists, integrating through it is the
+  right call — out of scope here, so the mock exposes none and the system
   never assumes one. This layer exists for the no-API long tail only.
 
 ## 2. Artifact schema
@@ -85,7 +85,8 @@ Why shaped this way:
 - **Observations are not steps.** Replay re-observes fresh each step.
 - **Business outcomes are declared at approval, not discovered.** One
   happy-path run cannot enumerate an app's legitimate non-success answers;
-  pretending otherwise is the taxonomy confusion the spec warns about.
+  pretending otherwise is the taxonomy confusion this contract exists to
+  prevent.
   `cua approve` is where a human who knows the app declares them; `draft`
   artifacts are rejected for unattended replay by default.
 - **Outputs are redacted in all persisted evidence**, returned intact to the
@@ -136,7 +137,7 @@ into the per-tenant binding alongside it). Tenant differences
 per-tenant locator aliases + recovery steps, resolved at replay start and
 recorded in evidence. Drift management: scheduled canary replays;
 `locator_unresolved` / `checkpoint_failed` is the drift signal — the same
-taxonomy, reused. Not built (per the spec); the schema's shape —
+taxonomy, reused. Not built; the schema's shape —
 parameterized values, fallback locators, declared outcomes — is what makes it
 possible without per-tenant re-recording.
 
@@ -152,7 +153,7 @@ pattern, verified live (continue@0.78 while healthy). On trigger:
 2. **Take over the live session.** Automation pauses; a `ControlSession`
    machine records every transition. The operator drives the **same surface
    instance** via a bare protocol (`goto`/`click`/`fill`/`look`/`resume`/
-   `abort`) — REPL for a human, script for evidence, per the scope note.
+   `abort`) — REPL for a human, script for evidence.
 3. **Hand back.** `resume` returns control; replay continues from the failed
    step. Operator actions fold into `result.escalation` and recovery
    `operator_handoff`.
@@ -245,8 +246,8 @@ Not built, with the next step if we continued:
 
 Built beyond the letter, cheaply: the 5× stability signal, the draft→approved
 gate (now a real ceremony: capability sheet, pre-approval dry-run validation,
-typed confirmation, ledgered decision — the spec's "confidence & approval"
-stretch goal), and per-port fault servers so evidence regenerates cleanly.
+typed confirmation, ledgered decision — the approval-ceremony extension), and
+per-port fault servers so evidence regenerates cleanly.
 
 ---
 
@@ -260,4 +261,4 @@ stretch goal), and per-port fault servers so evidence regenerates cleanly.
 | 5× replay stability | `evidence/replay-stability/` | real runs |
 | Guardrail refusal on the irreversible action (live model) | `evidence/vet-guard/` | real model run, real refusal |
 | Offline discovery demo | `evidence/discovery-offline/` | scripted stand-in, labeled as such |
-| Multi-tenant + desktop story | REPORT §4 | design only, per brief |
+| Multi-tenant + desktop story | §4 | design only |

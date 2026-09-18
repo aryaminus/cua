@@ -117,11 +117,12 @@ def test_model_never_receives_raw_ssn(tmp_path):
 
 
 def test_seam_register_every_choice_maps_to_a_tested_module():
-    """§4 pin: each 'your call' bullet must resolve to a surviving documented
-    seam — if a bullet has no module, test, and REPORT paragraph, it rots."""
+    """§4 pin: each 'judgment call' bullet must resolve to a surviving
+    documented seam — if a bullet has no module, test, and design paragraph,
+    it rots."""
     import pathlib
 
-    report = pathlib.Path("REPORT.md").read_text()
+    report = pathlib.Path("DESIGN.md").read_text()
     root = pathlib.Path("cua")
     mapping = {
         "Language": ("agent.py", "§1 language/runtime"),
