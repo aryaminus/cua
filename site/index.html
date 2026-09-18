@@ -95,80 +95,88 @@
 			</p>
 
 			<div class="panel" style="margin-top: 1rem; padding: 0; overflow-x: auto;">
-				<svg viewBox="0 0 1280 500" font-family="ui-monospace,Menlo,monospace" role="img" aria-label="cua architecture: discovery lane and replay lane">
+				<svg viewBox="0 0 1280 560" font-family="ui-monospace,Menlo,monospace" role="img" aria-label="cua architecture: discovery lane and replay lane">
 					<defs>
 						<marker id="arrow-a" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3.5 L0,7 Z" fill="#125ded"></path></marker>
 					</defs>
 					<text x="24" y="34" fill="#5a5f68" font-size="15" font-weight="bold">Lane 1: discovery (LLM, once)</text>
-					<rect x="24" y="60" width="170" height="96" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
+					<rect x="24" y="60" width="170" height="150" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
 					<text x="44" y="92" fill="#121212" font-size="15" font-weight="bold">goal + params</text>
-					<text x="44" y="116" fill="#5a5f68" font-size="12">"look up {member_id}"</text>
-					<text x="44" y="136" fill="#5a5f68" font-size="12">typed inputs, examples</text>
-					<line x1="196" y1="108" x2="228" y2="108" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
+					<text x="44" y="120" fill="#5a5f68" font-size="12">typed inputs,</text>
+					<text x="44" y="140" fill="#5a5f68" font-size="12">examples given</text>
+					<line x1="196" y1="135" x2="228" y2="135" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
 
-					<rect x="232" y="60" width="300" height="126" rx="14" fill="#e7effc" stroke="#125ded"></rect>
+					<rect x="232" y="60" width="300" height="150" rx="14" fill="#e7effc" stroke="#125ded"></rect>
 					<text x="252" y="90" fill="#121212" font-size="15" font-weight="bold">DiscoveryAgent</text>
 					<rect x="252" y="102" width="260" height="24" rx="8" fill="#fdf1da" stroke="#f59e0b"></rect>
-					<text x="264" y="118" fill="#9a6606" font-size="12">sees: element table + redacted text</text>
-					<rect x="252" y="131" width="260" height="24" rx="8" fill="#f2f5e0" stroke="#8aa30a"></rect>
-					<text x="264" y="147" fill="#4d5c06" font-size="12">emits: typed actions on indexes</text>
-					<text x="252" y="176" fill="#5a5f68" font-size="12">OpenRouter · temp 0 · JSON mode · stuck detection</text>
-					<line x1="534" y1="108" x2="566" y2="108" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
+					<text x="264" y="118" fill="#9a6606" font-size="12">element table + text</text>
+					<rect x="252" y="132" width="260" height="24" rx="8" fill="#f2f5e0" stroke="#8aa30a"></rect>
+					<text x="264" y="148" fill="#4d5c06" font-size="12">typed JSON actions</text>
+					<text x="252" y="178" fill="#5a5f68" font-size="12">OpenRouter · temp 0</text>
+					<text x="252" y="196" fill="#5a5f68" font-size="12">JSON mode · stuck checks</text>
+					<line x1="534" y1="135" x2="566" y2="135" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
 
-					<rect x="570" y="60" width="130" height="96" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
+					<rect x="570" y="60" width="130" height="150" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
 					<text x="590" y="92" fill="#121212" font-size="15" font-weight="bold">trace</text>
-					<text x="590" y="116" fill="#5a5f68" font-size="12">steps · locators</text>
-					<text x="590" y="136" fill="#5a5f68" font-size="12">outputs · rationale</text>
-					<line x1="702" y1="108" x2="734" y2="108" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
+					<text x="590" y="120" fill="#5a5f68" font-size="12">typed steps</text>
+					<text x="590" y="140" fill="#5a5f68" font-size="12">locators</text>
+					<text x="590" y="160" fill="#5a5f68" font-size="12">outputs</text>
+					<line x1="702" y1="135" x2="734" y2="135" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
 
-					<rect x="738" y="60" width="270" height="126" rx="14" fill="#f2f5e0" stroke="#8aa30a"></rect>
+					<rect x="738" y="60" width="270" height="150" rx="14" fill="#f2f5e0" stroke="#8aa30a"></rect>
 					<text x="758" y="90" fill="#121212" font-size="15" font-weight="bold">Artifact v1</text>
 					<rect x="758" y="102" width="230" height="24" rx="8" fill="#fff" stroke="#dcd9d2"></rect>
-					<text x="770" y="118" fill="#5a5f68" font-size="12">draft ──approve──► approved</text>
-					<text x="758" y="147" fill="#5a5f68" font-size="12">params · outcomes declared here</text>
-					<text x="758" y="172" fill="#5a5f68" font-size="12">ledgered human decision</text>
-					<line x1="1010" y1="108" x2="1042" y2="108" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
+					<text x="770" y="118" fill="#5a5f68" font-size="12">draft → approve → live</text>
+					<text x="758" y="148" fill="#5a5f68" font-size="12">params + declared</text>
+					<text x="758" y="168" fill="#5a5f68" font-size="12">outcomes; ledgered</text>
+					<text x="758" y="188" fill="#5a5f68" font-size="12">human decision</text>
+					<line x1="1010" y1="135" x2="1042" y2="135" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
 
-					<rect x="1046" y="60" width="210" height="96" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
+					<rect x="1046" y="60" width="210" height="150" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
 					<text x="1066" y="92" fill="#121212" font-size="15" font-weight="bold">evidence/</text>
-					<text x="1066" y="116" fill="#5a5f68" font-size="12">redacted run records</text>
-					<text x="1066" y="136" fill="#5a5f68" font-size="12">artifact · steps · result</text>
+					<text x="1066" y="120" fill="#5a5f68" font-size="12">redacted records</text>
+					<text x="1066" y="140" fill="#5a5f68" font-size="12">per run</text>
 
-					<path d="M873 188 L873 250 L500 250 L500 296" fill="none" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></path>
-					<text x="520" y="242" fill="#5a5f68" font-size="12">approved artifact only</text>
+					<path d="M873 212 L873 268 L500 268 L500 296" fill="none" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></path>
+					<text x="520" y="260" fill="#5a5f68" font-size="12">approved artifact only</text>
 
-					<text x="24" y="300" fill="#5a5f68" font-size="15" font-weight="bold">Lane 2: replay (no LLM, every run)</text>
-					<rect x="24" y="316" width="170" height="96" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
-					<text x="44" y="348" fill="#121212" font-size="15" font-weight="bold">params</text>
-					<text x="44" y="372" fill="#5a5f68" font-size="12">member_id=1002 …</text>
-					<text x="44" y="392" fill="#5a5f68" font-size="12">values, never keys</text>
-					<line x1="196" y1="364" x2="228" y2="364" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
+					<text x="24" y="316" fill="#5a5f68" font-size="15" font-weight="bold">Lane 2: replay (no LLM, every run)</text>
+					<rect x="24" y="340" width="170" height="160" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
+					<text x="44" y="372" fill="#121212" font-size="15" font-weight="bold">params</text>
+					<text x="44" y="400" fill="#5a5f68" font-size="12">member_id=1002</text>
+					<text x="44" y="420" fill="#5a5f68" font-size="12">values only,</text>
+					<text x="44" y="440" fill="#5a5f68" font-size="12">never keys</text>
+					<line x1="196" y1="420" x2="228" y2="420" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
 
-					<rect x="232" y="316" width="320" height="126" rx="14" fill="#f1ecfd" stroke="#8b5cf6"></rect>
-					<text x="252" y="346" fill="#121212" font-size="15" font-weight="bold">ReplayEngine</text>
-					<text x="252" y="370" fill="#5a5f68" font-size="12">fresh snapshot per step · locator re-resolution</text>
-					<text x="252" y="390" fill="#5a5f68" font-size="12">post-condition waits · outcome detection</text>
-					<text x="252" y="410" fill="#5a5f68" font-size="12">recoveries · budgets enforced per step</text>
-					<line x1="554" y1="364" x2="586" y2="364" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
+					<rect x="232" y="340" width="320" height="160" rx="14" fill="#f1ecfd" stroke="#8b5cf6"></rect>
+					<text x="252" y="370" fill="#121212" font-size="15" font-weight="bold">ReplayEngine</text>
+					<text x="252" y="398" fill="#5a5f68" font-size="12">fresh snapshot per step</text>
+					<text x="252" y="418" fill="#5a5f68" font-size="12">locator re-resolution</text>
+					<text x="252" y="438" fill="#5a5f68" font-size="12">post-condition waits</text>
+					<text x="252" y="458" fill="#5a5f68" font-size="12">outcome detection</text>
+					<text x="252" y="478" fill="#5a5f68" font-size="12">budgets enforced</text>
+					<line x1="554" y1="420" x2="586" y2="420" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
 
-					<rect x="590" y="316" width="250" height="96" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
-					<text x="610" y="348" fill="#121212" font-size="15" font-weight="bold">PageSurface</text>
-					<text x="610" y="372" fill="#5a5f68" font-size="12">protocol: goto/click/fill/snapshot</text>
-					<text x="610" y="392" fill="#5a5f68" font-size="12">Playwright · FakePage · future: AT-SPI</text>
-					<line x1="842" y1="364" x2="874" y2="364" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
+					<rect x="590" y="340" width="250" height="160" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
+					<text x="610" y="372" fill="#121212" font-size="15" font-weight="bold">PageSurface</text>
+					<text x="610" y="400" fill="#5a5f68" font-size="12">protocol, not a browser</text>
+					<text x="610" y="420" fill="#5a5f68" font-size="12">Playwright · FakePage</text>
+					<text x="610" y="440" fill="#5a5f68" font-size="12">desktop: AT-SPI later</text>
+					<line x1="842" y1="420" x2="874" y2="420" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
 
-					<rect x="878" y="316" width="170" height="96" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
-					<text x="898" y="348" fill="#121212" font-size="15" font-weight="bold">live app</text>
-					<text x="898" y="372" fill="#5a5f68" font-size="12">mock console</text>
-					<text x="898" y="392" fill="#5a5f68" font-size="12">fault injection on</text>
-					<line x1="1050" y1="364" x2="1082" y2="364" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
+					<rect x="878" y="340" width="170" height="160" rx="14" fill="#fff" stroke="#dcd9d2"></rect>
+					<text x="898" y="372" fill="#121212" font-size="15" font-weight="bold">live app</text>
+					<text x="898" y="400" fill="#5a5f68" font-size="12">mock console</text>
+					<text x="898" y="420" fill="#5a5f68" font-size="12">faults on demand</text>
+					<line x1="1050" y1="420" x2="1082" y2="420" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></line>
 
-					<rect x="1086" y="316" width="170" height="126" rx="14" fill="#e7effc" stroke="#125ded"></rect>
-					<text x="1106" y="346" fill="#121212" font-size="15" font-weight="bold">ReplayResult</text>
-					<text x="1106" y="370" fill="#5a5f68" font-size="12">SUCCESS</text>
-					<text x="1106" y="388" fill="#5a5f68" font-size="12">BUSINESS_OUTCOME</text>
-					<text x="1106" y="406" fill="#5a5f68" font-size="12">HARD_FAILURE</text>
-					<text x="1106" y="424" fill="#5a5f68" font-size="12">ESCALATED</text>
+					<rect x="1086" y="340" width="170" height="160" rx="14" fill="#e7effc" stroke="#125ded"></rect>
+					<text x="1106" y="370" fill="#121212" font-size="15" font-weight="bold">ReplayResult</text>
+					<text x="1106" y="398" fill="#5a5f68" font-size="12">SUCCESS</text>
+					<text x="1106" y="418" fill="#5a5f68" font-size="12">BUSINESS</text>
+					<text x="1106" y="434" fill="#5a5f68" font-size="12">_OUTCOME</text>
+					<text x="1106" y="454" fill="#5a5f68" font-size="12">HARD_FAILURE</text>
+					<text x="1106" y="474" fill="#5a5f68" font-size="12">ESCALATED</text>
 				</svg>
 			</div>
 
@@ -219,16 +227,16 @@
 				the same approved artifact against deliberate faults: every row below is
 				a committed run under <code>evidence/</code>.
 			</p>
-			<div class="panel" style="margin-top: var(--s3); overflow-x: auto;">
-				<table>
-					<tr><td class="k">success ×2</td><td>members 1001 / 1002: checkpoint holds, outputs extracted. Same artifact, different params.</td><td class="k" style="text-align:right">SUCCESS</td></tr>
-					<tr><td class="k">not-found</td><td>member 9999: declared outcome, returns a message payload.</td><td class="k" style="text-align:right">BUSINESS_OUTCOME</td></tr>
-					<tr><td class="k">invalid-input</td><td>member "401a": declared outcome, no crash.</td><td class="k" style="text-align:right">BUSINESS_OUTCOME</td></tr>
-					<tr><td class="k">permission-denied</td><td>frozen member 1005: declared outcome.</td><td class="k" style="text-align:right">BUSINESS_OUTCOME</td></tr>
-					<tr><td class="k">slow page (2.5 s)</td><td>member 1006: post-condition wait absorbs the delay, p50 3.29 s.</td><td class="k" style="text-align:right">SUCCESS</td></tr>
-					<tr><td class="k">transient busy page</td><td>member 1002: one recorded reload, then done.</td><td class="k" style="text-align:right">SUCCESS · 1 recovery</td></tr>
-					<tr><td class="k">server error</td><td>member 1003: HTTP 500 on the member page.</td><td class="k" style="text-align:right">HARD_FAILURE @ step 0</td></tr>
-					<tr><td class="k">session expiry</td><td>member 1002: hard failure escalated to an operator, run resumes and completes.</td><td class="k" style="text-align:right">ESCALATED → SUCCESS</td></tr>
+			<div class="panel" style="margin-top: var(--s3);">
+					<table>
+					<tr><td class="k">success ×2</td><td>members 1001 / 1002: checkpoint holds, outputs extracted. Same artifact, different params. <b>SUCCESS</b></td></tr>
+					<tr><td class="k">not-found</td><td>member 9999: declared outcome returns a message payload. <b>BUSINESS_OUTCOME</b></td></tr>
+					<tr><td class="k">bad input</td><td>member "401a": declared outcome, no crash. <b>BUSINESS_OUTCOME</b></td></tr>
+					<tr><td class="k">frozen acct</td><td>member 1005: teller role may not view it. <b>BUSINESS_OUTCOME</b></td></tr>
+					<tr><td class="k">slow page</td><td>member 1006 with a 2.5 s fault: the wait absorbs it, p50 3.29 s. <b>SUCCESS</b></td></tr>
+					<tr><td class="k">busy page</td><td>member 1002: one recorded reload, then done. <b>SUCCESS · 1 recovery</b></td></tr>
+					<tr><td class="k">server error</td><td>member 1003: HTTP 500 on the member page. <b>HARD_FAILURE @ step 0</b></td></tr>
+					<tr><td class="k">session expiry</td><td>member 1002: escalated to an operator, run resumes and completes. <b>ESCALATED → SUCCESS</b></td></tr>
 				</table>
 			</div>
 			<div class="note" style="margin-top: var(--s3)">
@@ -305,29 +313,29 @@
 			</p>
 			<div class="cols2" style="margin-top: var(--s3)">
 				<div class="panel">
-					<h3>Measured baseline (5 runs/case)</h3>
+					<h3>Measured baseline (5×/case)</h3>
 					<table>
-						<tr><td class="k">replay success</td><td>p50 796 ms · p95 875 ms</td></tr>
-						<tr><td class="k">business outcome</td><td>p50 650 ms · p95 659 ms</td></tr>
-						<tr><td class="k">slow fault absorbed</td><td>p50 3.29 s · p95 3.34 s</td></tr>
-						<tr><td class="k">transient busy + reload</td><td>p50 748 ms · p95 818 ms</td></tr>
-						<tr><td class="k">escalation cycle</td><td>4.66 s (operator-dominated)</td></tr>
-						<tr><td class="k">LLM call, live</td><td>p50 2.03 s · $0.000029/probe</td></tr>
-						<tr><td class="k">discovery end-to-end</td><td>9.0 s · $0.000821 · 4 calls</td></tr>
-						<tr><td class="k">offline test suite</td><td>76 tests · 21.7 s</td></tr>
+						<tr><td class="k">replay ok</td><td>796 ms p50 · 875 ms p95</td></tr>
+						<tr><td class="k">outcome exit</td><td>650 ms p50 · 659 ms p95</td></tr>
+						<tr><td class="k">slow fault</td><td>3.29 s p50 · 3.34 s p95</td></tr>
+						<tr><td class="k">busy reload</td><td>748 ms p50 · 818 ms p95</td></tr>
+						<tr><td class="k">escalation</td><td>4.66 s cycle</td></tr>
+						<tr><td class="k">LLM call</td><td>2.03 s p50 live</td></tr>
+						<tr><td class="k">discovery</td><td>9.0 s · $0.000821 · 4 calls</td></tr>
+						<tr><td class="k">test suite</td><td>76 tests · 21.7 s</td></tr>
 					</table>
 				</div>
 				<div class="panel">
-					<h3>Enforced budgets (with headroom)</h3>
+					<h3>Enforced budgets</h3>
 					<table>
-						<tr><td class="k">discovery cost</td><td>$0.50 cap ≈ 600× observed run</td></tr>
-						<tr><td class="k">discovery loop</td><td>600 s wall · 40 steps · 60 LLM calls</td></tr>
-						<tr><td class="k">replay waits</td><td>3 s per step (slow faults use ~2.6 s of it)</td></tr>
-						<tr><td class="k">replay act</td><td>10 s per browser action</td></tr>
-						<tr><td class="k">replay total</td><td>180 s ≈ 45× observed max</td></tr>
-						<tr><td class="k">network ladder</td><td>3 attempts · backoff 0.5/1.0 s · <code>Retry-After</code> honored (capped 30 s)</td></tr>
-						<tr><td class="k">timeouts</td><td>connect 10 s · read 60 s · write 30 s: dead networks fail in seconds</td></tr>
-						<tr><td class="k">never retried</td><td>4xx client errors (bad key, bad request): raise immediately</td></tr>
+						<tr><td class="k">cost cap</td><td>$0.50 ≈ 600× observed run</td></tr>
+						<tr><td class="k">discovery</td><td>600 s · 40 steps · 60 calls</td></tr>
+						<tr><td class="k">step wait</td><td>3 s (slow faults use ~2.6 s)</td></tr>
+						<tr><td class="k">act timeout</td><td>10 s per browser action</td></tr>
+						<tr><td class="k">run total</td><td>180 s ≈ 45× observed max</td></tr>
+						<tr><td class="k">retries</td><td>3 attempts · 0.5/1.0 s backoff · Retry-After ≤ 30 s</td></tr>
+						<tr><td class="k">timeouts</td><td>connect 10 s · read 60 s · write 30 s</td></tr>
+						<tr><td class="k">no retry</td><td>4xx client errors raise at once</td></tr>
 					</table>
 				</div>
 			</div>
