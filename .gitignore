@@ -15,6 +15,10 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
+# Tool session state (never commit)
+.commandcode/
+.opencode/
+
 # Secrets
 .env
 .env.*

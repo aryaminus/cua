@@ -24,7 +24,7 @@ Design write-up: **[REPORT.md](REPORT.md)** · Run evidence: **[evidence/](evide
 uv sync                                   # Python 3.12+, creates .venv
 uv run playwright install chromium        # one-time browser download
 cp .env.example .env                      # add OPENROUTER_API_KEY (discovery only)
-uv run pytest -q                          # 63 tests, offline, no keys needed
+uv run pytest -q                          # 65 tests, offline, no keys needed
 ```
 
 ## Demo path — the exact commands
@@ -112,7 +112,7 @@ cua/
   openrouter.py   chat completions + OpenRouter Decisions API (typesafe/jev)
   cli.py          serve / discover / approve / replay / demo
 config/allowlist.json   origins, routes, action types, risky-control patterns
-tests/            63 tests: offline engine suite + real-browser integration
+tests/            65 tests: offline engine suite + real-browser integration
 evidence/         generated run records (see evidence/README.md)
 REPORT.md         the seven-section design write-up
 ```
