@@ -63,20 +63,20 @@
 				<div class="panel">
 					<h3>What is built</h3>
 					<ul class="clean">
-						<li><b>Discovery loop:</b> one typed JSON decision per observation against a numbered element table; stuck detection; clean compile to a draft artifact.</li>
-						<li><b>Approval ceremony:</b> capability sheet, dry-run validation, typed confirmation, ledger line; draft artifacts are rejected for unattended replay by default.</li>
-						<li><b>Deterministic replay:</b> fresh snapshot per step, locator re-resolution, post-condition waits, declared business outcomes, recovery ledger.</li>
-						<li><b>Escalation:</b> hard failure hands the <em>same live session</em> to a human operator; run resumes from the failed step.</li>
-						<li><b>Enforced budgets:</b> cost, steps, wall-clock, waits, and a network retry ladder, all in configuration.</li>
+						<li><b>Discovery loop:</b> one typed JSON decision per observation on a numbered element table; compiles to a draft artifact.</li>
+						<li><b>Approval ceremony:</b> sheet, dry-run validation, typed confirmation, ledger. Drafts are refused for unattended replay.</li>
+						<li><b>Deterministic replay:</b> fresh snapshot per step, locator re-resolution, post-condition waits, recovery ledger.</li>
+						<li><b>Escalation:</b> hard failure hands the <em>live session</em> to a human; the run resumes from the failed step.</li>
+						<li><b>Enforced budgets:</b> cost, steps, wall-clock, waits, retries; all in configuration.</li>
 					</ul>
 				</div>
 				<div class="panel">
 					<h3>What the evidence means</h3>
 					<ul class="clean">
-						<li><b>Measured:</b> a real model run discovered the capability ($0.000821, 4 calls); replay percentiles come from 5-run benchmarks (<code>cua bench</code>).</li>
-						<li><b>Proven by tests:</b> 76 offline tests (taxonomy, locators, guardrails, redaction, budgets, escalation) plus real-browser integration.</li>
-						<li><b>Scripted where honest:</b> the keyless demo uses a scripted discovery stand-in, labeled as such; live runs sit beside it.</li>
-						<li><b>Designed only:</b> multi-tenant canary fleet and desktop/AT-SPI drivers are design (DESIGN.md §4), not code.</li>
+						<li><b>Measured:</b> a real model run discovered the capability ($0.000821, 4 calls); replay percentiles from 5-run benchmarks.</li>
+						<li><b>Proven by tests:</b> 76 offline tests plus real-browser integration.</li>
+						<li><b>Scripted, labeled:</b> the keyless demo uses a scripted stand-in; live runs sit beside it.</li>
+						<li><b>Designed only:</b> multi-tenant canary fleet and desktop/AT-SPI drivers (DESIGN.md §4).</li>
 					</ul>
 				</div>
 			</div>
@@ -137,7 +137,7 @@
 					<text x="1066" y="120" fill="#5a5f68" font-size="12">redacted records</text>
 					<text x="1066" y="140" fill="#5a5f68" font-size="12">per run</text>
 
-					<path d="M873 212 L873 268 L500 268 L500 296" fill="none" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></path>
+					<path d="M873 212 L873 268 L500 268 L500 336" fill="none" stroke="#125ded" stroke-width="2.2" marker-end="url(#arrow-a)"></path>
 					<text x="520" y="260" fill="#5a5f68" font-size="12">approved artifact only</text>
 
 					<text x="24" y="316" fill="#5a5f68" font-size="15" font-weight="bold">Lane 2: replay (no LLM, every run)</text>
@@ -197,20 +197,20 @@
 				<div class="panel">
 					<h3>Shape</h3>
 					<table>
-						<tr><td class="k"><code>inputs</code></td><td>typed parameters with examples: <code>{member_id}</code> resolves anywhere it appears.</td></tr>
-						<tr><td class="k"><code>steps</code></td><td>state-changing actions only (goto / click / fill / press_enter), each with rationale and an optional post-condition wait.</td></tr>
-						<tr><td class="k"><code>outcomes</code></td><td>declared business results (NOT_FOUND, INVALID_INPUT, PERMISSION_DENIED…) with detect conditions, declared by a human at approval, never guessed from one run.</td></tr>
-						<tr><td class="k"><code>checkpoint</code></td><td>the final-state assertion that must hold for SUCCESS.</td></tr>
-						<tr><td class="k"><code>outputs</code></td><td>regex-extracted values the caller receives.</td></tr>
+						<tr><td class="k"><code>inputs</code></td><td>typed, with examples; <code>{member_id}</code> resolves anywhere.</td></tr>
+						<tr><td class="k"><code>steps</code></td><td>goto / click / fill / press_enter only, each with rationale and an optional wait.</td></tr>
+						<tr><td class="k"><code>outcomes</code></td><td>NOT_FOUND, INVALID_INPUT, PERMISSION_DENIED… with detect conditions; declared by a human at approval, never guessed.</td></tr>
+						<tr><td class="k"><code>checkpoint</code></td><td>the final-state assertion for SUCCESS.</td></tr>
+						<tr><td class="k"><code>outputs</code></td><td>regex-extracted caller values.</td></tr>
 					</table>
 				</div>
 				<div class="panel">
 					<h3>Lifecycle</h3>
 					<ul class="clean">
-						<li><b>Draft:</b> compiled from a successful discovery trace, provenance attached (model, cost, calls).</li>
-						<li><b>Approval:</b> a human reviews the capability sheet, declares outcomes, passes dry-run validation, types the confirmation; the decision is ledgered.</li>
-						<li><b>Replay:</b> unattended execution requires <code>approved</code> status; drafts are refused by default.</li>
-						<li><b>Drift:</b> locator failures and checkpoint misses are the drift signal; the recovery ledger says which run absorbed what.</li>
+						<li><b>Draft:</b> compiled from a successful trace, provenance attached (model, cost, calls).</li>
+						<li><b>Approval:</b> review the sheet, declare outcomes, pass dry-run validation, type the confirmation; the decision is ledgered.</li>
+						<li><b>Replay:</b> requires <code>approved</code> status; drafts refused by default.</li>
+						<li><b>Drift:</b> locator failures and checkpoint misses are the signal; the recovery ledger records what each run absorbed.</li>
 					</ul>
 				</div>
 			</div>
@@ -223,9 +223,9 @@
 			<h2>Four statuses. Eight fault cases. All green, all committed.</h2>
 			<p class="sub">
 				Business outcomes are answers, not failures; recoverable conditions are
-				engine policy; everything else is a hard failure. The demo matrix runs
-				the same approved artifact against deliberate faults: every row below is
-				a committed run under <code>evidence/</code>.
+				engine policy; everything else is a hard failure. The matrix runs one
+				approved artifact against deliberate faults; every row is a committed
+				run under <code>evidence/</code>.
 			</p>
 			<div class="panel" style="margin-top: var(--s3);">
 					<table>
@@ -241,7 +241,7 @@
 			</div>
 			<div class="note" style="margin-top: var(--s3)">
 				<b>Stability:</b> five consecutive replays produce byte-identical result
-				signatures: determinism is asserted, not assumed.
+				signatures.
 			</div>
 		</div>
 	</section>
@@ -254,15 +254,15 @@
 				<div class="panel">
 					<h3>Pre-execution guardrails</h3>
 					<ul class="clean">
-						<li><b>Allowlist:</b> action types, origins + routes, risky-control patterns. The freeze button is forbidden as irreversible, in discovery, replay, and operator commands alike.</li>
-						<li><b>Live proof:</b> <code>evidence/vet-guard/</code> is a real model run told to freeze accounts: it navigates there, is refused, and declines the unsafe goal.</li>
+						<li><b>Allowlist:</b> action types, origins, routes, risky controls. The freeze button is forbidden everywhere: discovery, replay, operator.</li>
+						<li><b>Live proof:</b> <code>evidence/vet-guard/</code> is a real model told to freeze accounts; it navigates, is refused, declines.</li>
 						<li><b>Post-action URL guard:</b> unexpected navigations fail loud.</li>
 					</ul>
 				</div>
 				<div class="panel">
 					<h3>Data handling</h3>
 					<ul class="clean">
-						<li><b>Redaction:</b> SSNs, card-like numbers, and amounts are scrubbed from everything persisted and everything sent to the model: the loop never sees a raw SSN (test-asserted).</li>
+						<li><b>Redaction:</b> SSNs, card-like numbers, amounts scrubbed from everything persisted and sent; the loop never sees a raw SSN (test-asserted).</li>
 						<li><b>Credentials:</b> artifacts hold placeholders; <code>.env</code> is gitignored; caller outputs return intact in-process only.</li>
 						<li><b>Privacy posture:</b> <code>CUA_DATA_COLLECTION=deny</code> routes model calls to zero-retention endpoints.</li>
 					</ul>
@@ -279,24 +279,24 @@
 				<div class="qc">
 					<div class="n">1 · Detect</div>
 					<h3>Hard failure, recovery budget spent</h3>
-					<p>The engine stops, writes <code>intervention.json</code> (expected vs observed, page snapshot, screenshot) and hands over control of the session it was driving.</p>
+					<p>The engine stops, writes <code>intervention.json</code> (expected vs observed, snapshot, screenshot), and hands over the session it was driving.</p>
 				</div>
 				<div class="qc">
 					<div class="n">2 · Intervene</div>
 					<h3>Same surface instance</h3>
-					<p>The operator drives the very browser the engine holds, through a bare allowlisted protocol (<code>goto</code>/<code>click</code>/<code>fill</code>/<code>look</code>). Every action is recorded; every control transition is structured state.</p>
+					<p>The operator drives the browser the engine holds, via an allowlisted protocol (<code>goto</code>/<code>click</code>/<code>fill</code>/<code>look</code>). Every action and control transition is recorded.</p>
 				</div>
 				<div class="qc">
 					<div class="n">3 · Resume</div>
 					<h3>Continue from the failed step</h3>
-					<p><code>resume</code> returns control; already-satisfied steps are skipped, the checkpoint re-asserted, the run completes. Operator actions fold into <code>result.escalation</code>.</p>
+					<p><code>resume</code> returns control; satisfied steps are skipped, the checkpoint re-asserted, the run completes. Actions fold into <code>result.escalation</code>.</p>
 				</div>
 			</div>
 			<div class="note" style="margin-top: var(--s3)">
-				<b>Measured:</b> the scripted escalation cycle (expire, hand off, drive,
-				resume, complete) runs end-to-end in 4.66 s
-				(<code>evidence/replay-escalation-handoff/</code>). The mechanism is real;
-				the operator console UI is deliberately not built.
+				<b>Measured:</b> the scripted cycle (expire, hand off, drive, resume,
+				complete) runs end-to-end in 4.66 s
+				(<code>evidence/replay-escalation-handoff/</code>). The operator console
+				UI is deliberately not built.
 			</div>
 		</div>
 	</section>
@@ -306,10 +306,9 @@
 			<span class="eyebrow">Budgets, latency, cost</span>
 			<h2>Measured baselines beside enforced caps.</h2>
 			<p class="sub">
-				Budgets are runtime posture: typed configuration
-				(<code>config/budgets.json</code>), enforced, never advisory. Every replay
-				result self-describes its envelope. Breaches are typed failures with
-				<code>budget exceeded</code> reasons, test-asserted.
+				Typed configuration (<code>config/budgets.json</code>), enforced, never
+				advisory: breaches are typed <code>budget exceeded</code> failures, every
+				result self-describes its envelope (test-asserted).
 			</p>
 			<div class="cols2" style="margin-top: var(--s3)">
 				<div class="panel">
@@ -353,9 +352,9 @@
 			<h2>What is real, what is scripted, what is designed.</h2>
 			<div class="panel" style="overflow-x:auto">
 				<table>
-					<tr><td class="k">Real</td><td>Discovery loop, replay engine, taxonomy, guardrails, redaction, escalation mechanism, budgets, retry ladder, covered by 76 offline + real-browser tests. Live model runs: discovery ($0.000821) and the guardrail refusal.</td></tr>
-					<tr><td class="k">Scripted</td><td>The keyless demo's discovery stand-in, labeled as such in every artifact it produces.</td></tr>
-					<tr><td class="k">Mock by design</td><td>The target app: a deliberately hostile credit-union console (no test IDs, non-semantic markup, JS-confirm on the irreversible action, fault injection).</td></tr>
+					<tr><td class="k">Real</td><td>Engine, taxonomy, guardrails, redaction, escalation, budgets, retry ladder; 76 offline + browser tests. Live runs: discovery ($0.000821) and the guardrail refusal.</td></tr>
+					<tr><td class="k">Scripted</td><td>The keyless demo's discovery stand-in, labeled in every artifact it produces.</td></tr>
+					<tr><td class="k">Mock by design</td><td>Target app: a hostile credit-union console (no test IDs, non-semantic markup, JS-confirm on the irreversible action, fault injection).</td></tr>
 					<tr><td class="k">Designed only</td><td>Multi-tenant canary fleet, desktop/AT-SPI driver, operator console UI (DESIGN.md §4, §8).</td></tr>
 					<tr><td class="k">Not hidden</td><td>Every claim on this page cites a committed run under <code>evidence/</code>; anything without one is labeled designed.</td></tr>
 				</table>
