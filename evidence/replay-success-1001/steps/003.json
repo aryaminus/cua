@@ -8,11 +8,11 @@
       {
         "kind": "tag_ordinal",
         "tag": "input",
-        "ordinal": 0
+        "ordinal": 1
       }
     ]
   },
   "value": null,
   "post_url": "http://127.0.0.1:8791/member/1001",
-  "at": "2026-09-18T20:20:02+00:00"
+  "at": "2026-09-18T21:26:08+00:00"
 }

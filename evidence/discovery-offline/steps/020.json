@@ -7,14 +7,16 @@
       "role": "textbox",
       "name": "Member ID",
       "value": "",
-      "tag": "input"
+      "tag": "input",
+      "seq": 3
     },
     {
       "index": 1,
       "role": "button",
       "name": "Search",
       "value": "Search",
-      "tag": "input"
+      "tag": "input",
+      "seq": 3
     }
   ],
   "decision": {
@@ -24,5 +26,5 @@
     "value": "{member_id}",
     "reason": "parameterized member id goes in the only textbox"
   },
-  "at": "2026-09-18T20:20:00+00:00"
+  "at": "2026-09-18T21:26:06+00:00"
 }

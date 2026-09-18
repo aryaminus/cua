@@ -7,14 +7,16 @@
       "role": "textbox",
       "name": "Member ID",
       "value": "1001",
-      "tag": "input"
+      "tag": "input",
+      "seq": 5
     },
     {
       "index": 1,
       "role": "button",
       "name": "Search",
       "value": "Search",
-      "tag": "input"
+      "tag": "input",
+      "seq": 5
     }
   ],
   "decision": {
@@ -23,5 +25,5 @@
     "index": 1,
     "reason": "Search submits the lookup form"
   },
-  "at": "2026-09-18T20:20:00+00:00"
+  "at": "2026-09-18T21:26:06+00:00"
 }

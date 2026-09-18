@@ -209,3 +209,51 @@ def test_evidence_redacted_no_ssn_in_run_dir(tmp_path):
     result_json = (tmp_path / "evidence" / "test-run" / "result.json").read_text()
     assert "411-23-8891" not in result_json
     assert "[REDACTED" in result_json  # balance redacted in evidence
+
+
+def test_dialog_log_is_drained_once_per_step_not_replayed(tmp_path):
+    """Regression: the engine must drain the surface dialog log through
+    clear_dialogs() (the real surface returns a copy, so .clear() on the
+    return value is a no-op — the fake used to hide this divergence)."""
+    cfg = json.loads(json.dumps(CFG))
+    cfg["forbidden_elements"] = []
+    art = lookup_artifact(tmp_path)
+    art.entry_url = "http://127.0.0.1:8791/member/1001"
+    art.steps = [
+        Step(id=1, action="click",
+             target=Locator(role="button", name="Freeze Accounts")),
+        Step(id=2, action="click",
+             target=Locator(role="button", name="Freeze Accounts")),
+    ]
+    art.checkpoint = Check(text_contains="Member Detail")
+    page = FakePage()
+    page.goto("http://127.0.0.1:8791/member/1001")
+    run = RunLog(tmp_path / "evidence", "dialog-drain-run")
+    run.meta(mode="test")
+    eng = ReplayEngine(page, art, Allowlist(cfg), run, allow_draft=True)
+    r = eng.run({"member_id": "1001"})
+    assert r.status == "SUCCESS"
+    # Two clicks → two real dialogs → exactly two recorded recoveries. The
+    # regression this pins: with the old .clear()-on-a-copy code the second
+    # step re-recorded step 1's dialog (3 recoveries) and the log never
+    # drained; the fake's copy-semantics now match the real surface.
+    assert [rec.condition for rec in r.recoveries].count("unexpected_dialog") == 2
+    assert page.dialogs_seen == []
+
+
+def test_locator_fallback_uses_true_ordinal_not_zero(tmp_path):
+    from cua.surface import Element, Snapshot, locator_for, resolve
+
+    snap = Snapshot(url="x", text="t", elements=[
+        Element(index=0, role="textbox", name="First", tag="input"),
+        Element(index=1, role="textbox", name="Second", tag="input"),
+    ])
+    loc = locator_for(snap.elements[1], snap)
+    assert loc.fallbacks[0] == {"kind": "tag_ordinal", "tag": "input", "ordinal": 1}
+    # resolve against a page where names changed: fallback must find #2, not #1
+    renamed = Snapshot(url="x", text="t", elements=[
+        Element(index=0, role="textbox", name="zzz", tag="input"),
+        Element(index=1, role="textbox", name="yyy", tag="input"),
+    ])
+    assert resolve(Locator(role="textbox", name="Second",
+                           fallbacks=loc.fallbacks), renamed).index == 1

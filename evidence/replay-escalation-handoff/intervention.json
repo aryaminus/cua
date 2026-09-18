@@ -12,6 +12,6 @@
   "page_text_excerpt": "Meridian FCU \u00a0|\u00a0 MemberServ Console 4.2\n\nSession Expired\nYour session has expired due to inactivity.\nPlease log in again to continue.\n\nMeridian Federal Credit Union - internal use only. Session ID 88451-X.",
   "screenshot": "evidence/replay-escalation-handoff/steps/escalation.png",
   "operator_commands": "goto/click/fill/look/resume/abort",
-  "requested_at": "2026-09-18T20:26:02+00:00",
+  "requested_at": "2026-09-18T21:26:25+00:00",
   "intervention_file": "evidence/replay-escalation-handoff/intervention.json"
 }

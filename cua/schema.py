@@ -86,7 +86,7 @@ class Check(BaseModel):
 
 # ------------------------------------------------------------------- steps --
 
-Action = Literal["goto", "click", "fill", "press_enter"]
+Action = Literal["goto", "click", "fill", "press_enter", "read"]
 
 
 class Step(BaseModel):

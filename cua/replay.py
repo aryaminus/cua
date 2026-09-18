@@ -29,7 +29,7 @@ from urllib.parse import urlparse
 from .evidence import RunLog
 from .safety import Allowlist, redact_text
 from .schema import Artifact, Check, Failure, Recovery, ReplayResult, Step
-from .surface import Element, PageSurface, Snapshot, resolve
+from .surface import Element, PageSurface, Snapshot, StaleElementError, resolve
 
 WAIT_TIMEOUT_S = 3.0
 POLL_S = 0.1
@@ -216,8 +216,15 @@ class ReplayEngine:
                 self.surface.fill(target, self.art.resolve_value(step.value, params))
             elif step.action == "press_enter":
                 self.surface.press_enter(target)
+            elif step.action == "read":
+                pass  # observation-only: re-snapshot below refreshes state
         except _HardFailure:
             raise
+        except StaleElementError as exc:
+            raise self._hard(
+                step, "target still valid at act time", f"stale element: {exc}",
+                screenshot=True,
+            ) from exc
         except Exception as exc:
             raise self._hard(
                 step, f"{step.action} executed", f"driver error: {exc}", screenshot=True
@@ -245,7 +252,7 @@ class ReplayEngine:
         if self.surface.dialogs_seen:
             for d in self.surface.dialogs_seen:
                 self._record_recovery(step, "unexpected_dialog", f"dismissed: {d}")
-            self.surface.dialogs_seen.clear()
+            self.surface.clear_dialogs()
         if step.wait is not None:
             deadline = time.monotonic() + WAIT_TIMEOUT_S
             busy_seen = False
@@ -363,8 +370,8 @@ class ReplayEngine:
         from .escalation import ControlSession, build_intervention, write_intervention
 
         snap = self.surface.snapshot()
-        shot = str(self.elog.dir / "steps" / "escalation.png")
-        self.surface.screenshot(shot)
+        shot_candidate = str(self.elog.dir / "steps" / "escalation.png")
+        shot = shot_candidate if self.surface.screenshot(shot_candidate) else None
         req = build_intervention(
             run_dir=str(self.elog.dir),
             capability=self.art.capability_name,
@@ -407,8 +414,8 @@ class ReplayEngine:
     def _hard(self, step: Step | None, expected: str, observed: str, *, screenshot=False):
         shot = None
         if screenshot:
-            shot = str(self.elog.dir / "steps" / f"{(step.id if step else 0):03d}-failure.png")
-            self.surface.screenshot(shot)
+            candidate = str(self.elog.dir / "steps" / f"{(step.id if step else 0):03d}-failure.png")
+            shot = candidate if self.surface.screenshot(candidate) else None
         return _HardFailure(
             Failure(
                 step_id=step.id if step else 0,

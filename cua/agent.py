@@ -33,7 +33,7 @@ from .schema import (
     Provenance,
     Step,
 )
-from .surface import Element, PageSurface, locator_for
+from .surface import Element, PageSurface, Snapshot, locator_for
 
 SYSTEM_PROMPT = """You are a computer-use agent operating a bank back-office console.
 You see a numbered element table for the current page (role + name), the page URL, and an excerpt of its text.
@@ -69,6 +69,7 @@ class TraceStep:
     n: int
     action: str
     element: Element | None = None
+    elements: list[Element] = field(default_factory=list)  # full table at act time
     value: str | None = None
     reason: str = ""
     pre_url: str = ""
@@ -173,6 +174,10 @@ class DiscoveryAgent:
                                     started, stuck_counter, name)
             if action == "fail":
                 return DiscoveryOutcome(False, reason=reply.get("reason", "model gave up"), trace=trace, llm_calls=llm_calls)
+            if action not in ("goto", "click", "fill", "press_enter", "read"):
+                self.elog.line(f"step {n}: unknown action {action!r} rejected")
+                messages.append({"role": "user", "content": f"Unknown action {action!r}. Reply with one of goto/click/fill/press_enter/read/done/fail."})
+                continue
 
             messages.append({"role": "assistant", "content": str(reply)})
             # History carries only the typed decision + one-line outcome per
@@ -250,9 +255,11 @@ class DiscoveryAgent:
                 self.surface.fill(el, live_value or "")
             elif action == "press_enter":
                 self.surface.press_enter(el)
+            elif action == "read":
+                pass  # observation-only: the post snapshot below is the read
         except Exception as exc:
-            return TraceStep(n=n, action=action, element=el, value=value,
-                             reason=f"driver error: {exc}", pre_path=pre_path)
+            return TraceStep(n=n, action=action, element=el, elements=list(snap.elements),
+                             value=value, reason=f"driver error: {exc}", pre_path=pre_path)
         post = self.surface.snapshot()
         self.elog.step(
             n * 10 + 1,
@@ -260,7 +267,7 @@ class DiscoveryAgent:
              "value": value, "post_url": post.url},
         )
         return TraceStep(
-            n=n, action=action, element=el, value=value,
+            n=n, action=action, element=el, elements=list(snap.elements), value=value,
             reason=str(reply.get("reason", "")), pre_url=snap.url,
             pre_path=pre_path, post_path=_path(post.url),
         )
@@ -328,8 +335,8 @@ class DiscoveryAgent:
         from .escalation import ControlSession, build_intervention, write_intervention
 
         snap = self.surface.snapshot()
-        shot = str(self.elog.dir / "steps" / "discovery-escalation.png")
-        self.surface.screenshot(shot)
+        shot_candidate = str(self.elog.dir / "steps" / "discovery-escalation.png")
+        shot = shot_candidate if self.surface.screenshot(shot_candidate) else None
         req = build_intervention(
             run_dir=str(self.elog.dir),
             capability=f"discovery:{goal[:60]}",
@@ -376,8 +383,8 @@ class DiscoveryAgent:
                     reason=f"done rejected: output pattern {outputs[-1].extract.pattern!r} does not match final page",
                     trace=trace, llm_calls=llm_calls,
                 )
-        shot = str(self.elog.dir / "steps" / "discovery-final.png")
-        self.surface.screenshot(shot)
+        shot_candidate = str(self.elog.dir / "steps" / "discovery-final.png")
+        shot = shot_candidate if self.surface.screenshot(shot_candidate) else None
         self.elog.step(900, {"phase": "evidence", "final_screenshot": shot})
         art = self._compile(goal, params, trace, verify_text, outputs, run_id,
                             llm_calls, started, name)
@@ -410,7 +417,9 @@ class DiscoveryAgent:
                 Step(
                     id=len(steps) + 1,
                     action=ts.action,  # type: ignore[arg-type]
-                    target=locator_for(ts.element) if ts.element else None,
+                    target=locator_for(ts.element, Snapshot(
+                        url=ts.pre_url, text="",
+                        elements=list(ts.elements))) if ts.element else None,
                     value=parametrize(ts.value) if ts.action in ("goto", "fill") else None,
                     wait=wait,
                     rationale=ts.reason[:200],

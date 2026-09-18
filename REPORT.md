@@ -36,7 +36,7 @@ Judgment calls the spec leaves open, and why — one per §4 bullet:
   decision per observation (never free text), `reasoning: disabled` plus the
   response-healing plugin for stable actions, temp 0 + fixed seed, and a Jev
   continue/stuck pair asked only when the deterministic no-progress rule
-  fires. Recorded cost: $0.0014 discovery, $0 replay.
+  fires. Recorded cost: $0.0008 discovery, $0 replay.
 - **Computer-use technology: Playwright DOM automation narrowed to a
   numbered element table** — not screenshots+coordinates, not raw DOM
   passthrough. Deterministic, near-zero cost, and structurally the
@@ -129,7 +129,9 @@ gap: pixel-only surfaces need an OCR front end feeding the same table.
 
 **Multi-tenant reuse.** Artifacts would gain an `app_signature` (product +
 major version, not tenant) and canonical parameterized routes
-(`/member/{member_id}` — already how waits are recorded). Tenant differences
+(`/member/{member_id}` — already how waits are recorded; the one field that
+cannot generalize as-is is the absolute `entry_url` origin, which would move
+into the per-tenant binding alongside it). Tenant differences
 (branding, renamed labels, extra interstitials) become an override layer:
 per-tenant locator aliases + recovery steps, resolved at replay start and
 recorded in evidence. Drift management: scheduled canary replays;
@@ -176,10 +178,12 @@ gitignored; artifacts hold placeholders, never credentials.
 The same pre-execution shape has field evidence of most-attacks caught,
 near-zero false blocks, at a fraction of a judge's cost — cited as
 validation, not a new component. Dialog auto-dismissal suits interstitials,
-not consequential choices. Redaction is regex-based; production would do it
-at the schema layer. Model supply: Jev is days old, RLCD benchmarks thin,
-launch-week data terms not enterprise-grade — all inputs here are synthetic
-fixtures, and `CUA_DATA_COLLECTION=deny` opts into zero-retention endpoints.
+not consequential choices. Redaction is regex-based — including a PAN
+pattern that deliberately over-matches long digit runs (safe direction for
+fixtures; production would scope it at the schema layer). Model supply: Jev
+is days old, RLCD benchmarks thin, launch-week data terms not
+enterprise-grade — all inputs here are synthetic fixtures, and
+`CUA_DATA_COLLECTION=deny` opts into zero-retention endpoints.
 
 ## 7. Cuts
 
@@ -196,8 +200,10 @@ Not built, with the next step if we continued:
 - **Parallelism, queues, services** — explicitly unrewarded; additive, not
   necessary.
 
-Built beyond the letter, cheaply: the 5× stability signal and the
-draft→approved gate (both listed stretch goals).
+Built beyond the letter, cheaply: the 5× stability signal, the draft→approved
+gate (now a real ceremony: capability sheet, pre-approval dry-run validation,
+typed confirmation, ledgered decision — the spec's "confidence & approval"
+stretch goal), and per-port fault servers so evidence regenerates cleanly.
 
 ---
 

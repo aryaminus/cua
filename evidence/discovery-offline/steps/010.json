@@ -7,14 +7,16 @@
       "role": "textbox",
       "name": "Member ID",
       "value": "",
-      "tag": "input"
+      "tag": "input",
+      "seq": 1
     },
     {
       "index": 1,
       "role": "button",
       "name": "Search",
       "value": "Search",
-      "tag": "input"
+      "tag": "input",
+      "seq": 1
     }
   ],
   "decision": {
@@ -23,5 +25,5 @@
     "value": "http://127.0.0.1:8791/search",
     "reason": "entry point for member lookup"
   },
-  "at": "2026-09-18T20:20:00+00:00"
+  "at": "2026-09-18T21:26:06+00:00"
 }

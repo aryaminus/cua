@@ -10,7 +10,6 @@ Faults (armed via env, read per request — deterministic per configuration):
   MOCKAPP_FAULT=server_error_member_1003   -> /member/1003 returns HTTP 500
   MOCKAPP_SESSION_TTL=<N>                  -> after N page loads, every page
                                               returns the session-expired screen
-  MOCKAPP_NO_DIALOG=1                      -> freeze submits without confirm()
 """
 
 from __future__ import annotations
@@ -86,13 +85,6 @@ _busy_fired = False
 _lock = threading.Lock()
 
 app = Flask(__name__)
-
-
-def _count_page_load() -> int:
-    global _page_loads
-    with _lock:
-        _page_loads += 1
-        return _page_loads
 
 
 def _reset_session() -> None:

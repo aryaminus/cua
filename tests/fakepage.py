@@ -97,7 +97,9 @@ class FakePage:
 
     @property
     def dialogs_seen(self) -> list[str]:
-        return self._dialogs
+        # Mirrors PlaywrightSurface: returns a COPY, so engine code must drain
+        # via clear_dialogs() — calling .clear() on this is a silent no-op.
+        return list(self._dialogs)
 
     def goto(self, url: str) -> None:
         self.url = url.split("#")[0]
@@ -107,6 +109,9 @@ class FakePage:
             self._loads = 0  # re-login
         else:
             self._loads += 1  # a navigation is a page load (mirrors the Flask app)
+
+    def clear_dialogs(self) -> None:
+        self._dialogs.clear()
 
     def reload(self) -> None:
         # A reload consumes the one-shot busy page: if the current URL would

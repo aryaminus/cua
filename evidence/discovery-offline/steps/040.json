@@ -7,7 +7,8 @@
       "role": "button",
       "name": "Freeze Accounts",
       "value": "Freeze Accounts",
-      "tag": "input"
+      "tag": "input",
+      "seq": 7
     }
   ],
   "decision": {
@@ -24,5 +25,5 @@
     ],
     "answer": "savings balance read from the member detail page"
   },
-  "at": "2026-09-18T20:20:00+00:00"
+  "at": "2026-09-18T21:26:06+00:00"
 }

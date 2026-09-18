@@ -91,12 +91,14 @@ class Element(BaseModel):
     name: str
     value: str = ""
     tag: str = ""
+    seq: int = 0  # snapshot generation: guards snapshot/act index coupling
 
 
 class Snapshot(BaseModel):
     url: str
     text: str  # body innerText — state reading, checkpoints, extraction
     elements: list[Element]
+    seq: int = 0
 
 
 # ----------------------------------------------------------- locator logic --
@@ -132,15 +134,35 @@ def resolve(locator: Locator, snap: Snapshot) -> Element | None:
     return None
 
 
-def locator_for(el: Element) -> Locator:
-    """Derive the artifact locator for an element the discovery run acted on."""
+def locator_for(el: Element, snap: Snapshot | None = None) -> Locator:
+    """Derive the artifact locator for an element the discovery run acted on.
+
+    The fallback records the element's TRUE rank among same-tag nodes (from
+    the snapshot it came from) — never a hardcoded 0 — so the fallback still
+    finds the right control on pages with several textboxes or buttons.
+    """
     fallbacks: list[dict] = []
     if el.tag:
-        fallbacks.append({"kind": "tag_ordinal", "tag": el.tag, "ordinal": 0})
+        ordinal = 0
+        if snap is not None:
+            same = [e for e in snap.elements if e.tag == el.tag]
+            if el in same:
+                ordinal = same.index(el)
+            else:
+                for i, cand in enumerate(same):
+                    if cand.index == el.index and cand.name == el.name:
+                        ordinal = i
+                        break
+        fallbacks.append({"kind": "tag_ordinal", "tag": el.tag, "ordinal": ordinal})
     return Locator(role=el.role, name=el.name, fallbacks=fallbacks)
 
 
 # ------------------------------------------------------------------ page ----
+
+class StaleElementError(RuntimeError):
+    """The live DOM changed between snapshot and act: the indexed element no
+    longer matches. Acting would mis-click; the caller must re-snapshot."""
+
 
 class PageSurface(Protocol):
     """What replay/agent/escalation need from a live session."""
@@ -152,6 +174,7 @@ class PageSurface(Protocol):
     def fill(self, el: Element, value: str) -> None: ...
     def press_enter(self, el: Element | None) -> None: ...
     def screenshot(self, path: str) -> bool: ...
+    def clear_dialogs(self) -> None: ...  # drain the dialog log after recording it
     @property
     def dialogs_seen(self) -> list[str]: ...
 
@@ -166,6 +189,7 @@ class PlaywrightSurface:
         self._browser = self._pw.chromium.launch(headless=headless)
         self._page = self._browser.new_page()
         self._dialogs: list[str] = []
+        self._seq = 0
         self._page.on("dialog", self._on_dialog)
         if url:
             self.goto(url)
@@ -194,9 +218,12 @@ class PlaywrightSurface:
         last: Exception | None = None
         for _ in range(6):
             try:
-                elements = [Element(**e) for e in self._page.evaluate(_SNAPSHOT_JS)]
+                self._seq += 1
+                elements = [
+                    Element(**e, seq=self._seq) for e in self._page.evaluate(_SNAPSHOT_JS)
+                ]
                 text = self._page.evaluate("() => document.body.innerText")
-                return Snapshot(url=self._page.url, text=text, elements=elements)
+                return Snapshot(url=self._page.url, text=text, elements=elements, seq=self._seq)
             except PlaywrightError as exc:
                 last = exc
                 import time as _time
@@ -204,8 +231,36 @@ class PlaywrightSurface:
                 _time.sleep(0.1)
         raise last  # type: ignore[misc]
 
+    def clear_dialogs(self) -> None:
+        self._dialogs.clear()
+
     def _nth(self, el: Element):
-        return self._page.locator(SELECTOR).nth(el.index)
+        locator = self._page.locator(SELECTOR).nth(el.index)
+        # Staleness guard: the indexed node must still resemble the element
+        # the snapshot described — a re-render between snapshot and act would
+        # otherwise mis-click silently. Textboxes are exempt from the name
+        # check: their label lives outside the input node (adjacent <td>),
+        # so an input's own text is empty even when perfectly fresh.
+        try:
+            probe = locator.evaluate(
+                """(n) => ({tag: n.tagName.toLowerCase(),
+                            text: (n.innerText || n.value || '').slice(0, 80)})"""
+            )
+        except Exception as exc:
+            raise StaleElementError(f"element {el.index} vanished before act: {exc}") from exc
+        if el.tag and el.tag != probe.get("tag", ""):
+            raise StaleElementError(
+                f"element {el.index} changed tag {el.tag} -> {probe.get('tag')}"
+            )
+        if (
+            el.name
+            and el.role != "textbox"
+            and el.name.strip().lower() not in str(probe.get("text", "")).lower()
+        ):
+            raise StaleElementError(
+                f"element {el.index} no longer matches {el.role} {el.name!r}"
+            )
+        return locator
 
     def click(self, el: Element) -> None:
         self._nth(el).click()

@@ -76,6 +76,7 @@ class ScriptedOperator:
             if cmd.strip() == "look":
                 snap = surface.snapshot()
                 actions.append(f"  -> url={snap.url}")
+                actions.append(f"     | {snap.text[:300].strip().replace(chr(10), ' | ')}")
                 continue
             if cmd.strip() == "resume":
                 resumed = True
@@ -117,6 +118,7 @@ class TerminalOperator:
             if cmd == "look":
                 snap = surface.snapshot()
                 actions.append(f"  -> url={snap.url}")
+                actions.append(f"     | {snap.text[:300].strip().replace(chr(10), ' | ')}")
                 continue
             try:
                 _run_operator_command(surface, cmd, session_origin=session_origin)

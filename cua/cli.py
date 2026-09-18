@@ -131,9 +131,19 @@ def cmd_discover(args) -> None:
              params=params, app_url=APP_URL, allowlist=str(args.allowlist))
     surface = PlaywrightSurface(headless=not args.headed)
     try:
+        operator = None
+        if args.operator_script:
+            from .escalation import ScriptedOperator
+
+            operator = ScriptedOperator(
+                [c.strip() for c in args.operator_script.split(";") if c.strip()])
+        elif args.operator_repl:
+            from .escalation import TerminalOperator
+
+            operator = TerminalOperator()
         agent = DiscoveryAgent(
             surface, llm, allow, run, model=model, decisions_model=jev,
-            max_steps=args.max_steps, deadline_s=args.deadline_s, operator=None,
+            max_steps=args.max_steps, deadline_s=args.deadline_s, operator=operator,
         )
         out = agent.run(args.goal, args.entry or APP_URL, param_spec, args.run_id,
                         name=args.name)
@@ -153,7 +163,8 @@ def cmd_discover(args) -> None:
 
 
 def cmd_approve(args) -> None:
-    art = Artifact.model_validate_json(Path(args.artifact).read_text())
+    path = Path(args.artifact)
+    art = Artifact.model_validate_json(path.read_text())
     outcomes = []
     if args.preset_lookup_outcomes:
         outcomes = LOOKUP_OUTCOMES
@@ -162,10 +173,103 @@ def cmd_approve(args) -> None:
     if outcomes:
         existing = {o.id for o in art.outcomes}
         art.outcomes = art.outcomes + [o for o in outcomes if o.id not in existing]
+    # Approval ceremony: the reviewer sees the full capability sheet, the
+    # artifact is dry-run validated, and approval requires an explicit typed
+    # confirmation (or --yes for scripts). The decision is ledgered.
+    print(_capability_sheet(art))
+    problems = _validate_artifact_for_approval(art)
+    if problems:
+        print("approval REFUSED — artifact failed pre-approval validation:")
+        for p in problems:
+            print(f"  - {p}")
+        sys.exit(3)
+    if art.status == "approved" and not args.force:
+        print("already approved; pass --force to re-approve (re-ledgers the decision).")
+        return
+    if not args.yes:
+        try:
+            confirm = input(
+                "type APPROVE to approve this capability for unattended replay: "
+            ).strip()
+        except EOFError:
+            confirm = ""
+        if confirm != "APPROVE":
+            print("not approved — no changes written.")
+            sys.exit(4)
     art.status = "approved"
-    Path(args.artifact).write_text(art.model_dump_json(indent=2))
+    path.write_text(art.model_dump_json(indent=2))
+    actor = os.environ.get("USER", "reviewer")
+    from datetime import UTC, datetime
+
+    stamp = datetime.now(UTC).isoformat(timespec="seconds")
+    with open(path.parent / "run.log", "a") as fh:
+        fh.write(f"{stamp} approval actor={actor} status=draft->approved "
+                 f"outcomes={[o.id for o in art.outcomes]}\n")
     print(f"approved {art.capability_name!r}: status={art.status}, "
           f"steps={len(art.steps)}, outcomes={[o.id for o in art.outcomes]}")
+
+
+def _fmt_inputs(art: Artifact) -> str:
+    return ", ".join(f"{p.name}:{p.type}" + ("" if p.required else "?") for p in art.inputs)
+
+
+def _capability_sheet(art: Artifact) -> str:
+    lines = [
+        f"capability : {art.capability_name}  (schema {art.schema_version}, status {art.status})",
+        f"app        : {art.app}",
+        f"entry      : {art.entry_url}",
+        f"inputs     : {_fmt_inputs(art)}",
+        f"outputs    : {', '.join(o.name for o in art.outputs)}",
+        f"checkpoint : {art.checkpoint.describe()}",
+        f"outcomes   : {', '.join(o.id for o in art.outcomes) or '(none declared)'}",
+        "steps      :",
+    ]
+    for s in art.steps:
+        tgt = f"{s.target.role} {s.target.name!r}" if s.target else "-"
+        wait = f"  wait: {s.wait.describe()}" if s.wait else ""
+        lines.append(f"  {s.id}. {s.action} {tgt}"
+                     + (f"  value={s.value!r}" if s.value else "") + wait)
+    lines.append(f"provenance : {art.provenance.model}, run {art.provenance.run_id}, "
+                 f"{art.provenance.steps_llm_calls} llm calls, ${art.provenance.cost_usd}")
+    return "\n".join(lines)
+
+
+def _validate_artifact_for_approval(art: Artifact) -> list[str]:
+    """Deterministic pre-approval dry run: schema invariants (pydantic already
+    enforced them on load) plus the checks only a reviewer pass can do —
+    every {param} resolves, waits/checkpoint carry no masked values, the
+    checkpoint differs from every step wait (it must assert the END state)."""
+    problems: list[str] = []
+    params = {p.name: p.example or "1" for p in art.inputs}
+    try:
+        for s in art.steps:
+            if s.value:
+                art.resolve_value(s.value, params)
+            if s.wait:
+                for f in ("url_contains", "text_contains"):
+                    v = getattr(s.wait, f)
+                    if v:
+                        art.resolve_value(v, params)
+        for o in art.outcomes:
+            v = o.detect.text_contains or o.detect.url_contains or ""
+            art.resolve_value(v, params)
+            for t in o.returns.values():
+                art.resolve_value(t, params)
+    except ValueError as exc:
+        problems.append(str(exc))
+    for label, chk in [("checkpoint", art.checkpoint)] + [
+        (f"step {s.id} wait", s.wait) for s in art.steps if s.wait
+    ]:
+        for f in ("text_contains",):
+            v = getattr(chk, f)
+            if v and "[REDACTED" in v:
+                problems.append(f"{label} references a masked value: {v!r}")
+    cp = art.checkpoint.describe()
+    if any(s.wait and s.wait.describe() == cp for s in art.steps):
+        problems.append("checkpoint is identical to a step wait — it must assert the end state")
+    if not art.outputs:
+        problems.append("no declared outputs — an agent-invocable capability must return something")
+    return problems
 
 
 def cmd_replay(args) -> None:
@@ -435,6 +539,10 @@ def main(argv=None) -> None:
                    help="wall-clock timeout for the loop (§3.1 stopping condition)")
     s.add_argument("--run-id", default=None)
     s.add_argument("--allowlist", default=None)
+    s.add_argument("--operator-script", default=None,
+                   help="';'-separated operator commands if discovery gets stuck")
+    s.add_argument("--operator-repl", action="store_true",
+                   help="interactive operator if discovery gets stuck")
     s.add_argument("--headed", action="store_true")
     s.set_defaults(fn=cmd_discover)
 
@@ -445,6 +553,10 @@ def main(argv=None) -> None:
         "--outcome-json", action="append", default=[],
         help='repeatable JSON Outcome: {"id":..., "detect":{...}, "returns":{...}}',
     )
+    s.add_argument("--yes", action="store_true",
+                   help="non-interactive: skip the typed APPROVE confirmation")
+    s.add_argument("--force", action="store_true",
+                   help="re-approve an already-approved artifact (re-ledgers)")
     s.set_defaults(fn=cmd_approve)
 
     s = sub.add_parser("replay", help="deterministic replay of an artifact")
