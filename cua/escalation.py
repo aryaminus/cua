@@ -28,10 +28,13 @@ human would type, TerminalOperator reads stdin):
 from __future__ import annotations
 
 import json
+import shlex
 from datetime import UTC, datetime
 from typing import Protocol
+from urllib.parse import urlsplit
 
-from .schema import EscalationRecord, Step
+from .safety import Allowlist
+from .schema import EscalationRecord, Locator, Step
 from .surface import PageSurface, Snapshot, resolve
 
 
@@ -137,23 +140,16 @@ def _session_origin(surface: PageSurface) -> str | None:
     """Origin of the session the operator currently holds — trusted for
     navigation so fault-phase servers on demo-private ports keep working,
     while every other origin still goes through the allowlist."""
-    from urllib.parse import urlsplit
-
     try:
         current = surface.snapshot().url
         return f"{urlsplit(current).scheme}://{urlsplit(current).netloc}"
-    except Exception:
+    except Exception:  # a dead session has no origin; fall back to allowlist-only
         return None
 
 
 def _run_operator_command(
     surface: PageSurface, cmd: str, *, session_origin: str | None = None
 ) -> None:
-    import shlex
-
-    from .safety import Allowlist
-    from .schema import Locator
-
     parts = shlex.split(cmd)
     if not parts:
         raise ValueError("empty operator command")

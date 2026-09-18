@@ -22,6 +22,7 @@ never emits selectors, coordinates, or code.
 from __future__ import annotations
 
 import json
+import time
 from typing import Protocol
 
 from pydantic import BaseModel
@@ -226,9 +227,7 @@ class PlaywrightSurface:
                 return Snapshot(url=self._page.url, text=text, elements=elements, seq=self._seq)
             except PlaywrightError as exc:
                 last = exc
-                import time as _time
-
-                _time.sleep(0.1)
+                time.sleep(0.1)
         raise last  # type: ignore[misc]
 
     def clear_dialogs(self) -> None:
@@ -246,7 +245,7 @@ class PlaywrightSurface:
                 """(n) => ({tag: n.tagName.toLowerCase(),
                             text: (n.innerText || n.value || '').slice(0, 80)})"""
             )
-        except Exception as exc:
+        except Exception as exc:  # probe read itself failed: treat as vanished
             raise StaleElementError(f"element {el.index} vanished before act: {exc}") from exc
         if el.tag and el.tag != probe.get("tag", ""):
             raise StaleElementError(

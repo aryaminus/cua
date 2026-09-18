@@ -169,7 +169,7 @@ def test_escalation_handoff_resumes_and_succeeds(tmp_path):
                operator=operator).run({"member_id": "1002"})
     assert r.status == "SUCCESS", r.failure
     assert r.escalation is not None and r.escalation.resumed
-    assert any("control-transitions" in a for a in r.escalation.operator_actions)
+    assert [t["to"] for t in r.escalation.transitions] == ["HUMAN", "AUTOMATION"]
     assert r.outputs["savings_balance"] == "19,340.00"
     assert any(rec.condition == "operator_handoff" for rec in r.recoveries)
 

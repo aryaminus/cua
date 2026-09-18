@@ -235,6 +235,10 @@ class EscalationRecord(BaseModel):
     reason: str
     requested_at: str
     operator_actions: list[str] = Field(default_factory=list)
+    transitions: list[dict] = Field(
+        default_factory=list,
+        description="structured control-transfer events {from,to,why,at}",
+    )
     resumed: bool = False
     intervention_file: str | None = None
 

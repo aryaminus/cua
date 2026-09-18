@@ -211,7 +211,14 @@ class DiscoveryAgent:
 
     # ------------------------------------------------------------------ pieces
 
-    def _observation(self, goal, params, snap, sig, last_sig) -> str:
+    def _observation(
+        self,
+        goal: str,
+        params: dict[str, Param],
+        snap: Snapshot,
+        sig: tuple,
+        last_sig: tuple | None,
+    ) -> str:
         ptext = redact_text(snap.text)
         excerpt = ptext[-500:]
         param_lines = "\n".join(f"- {p.name} = {p.example} (use {{{p.name}}} in values)" for p in params.values())
@@ -222,7 +229,7 @@ class DiscoveryAgent:
             f"PAGE TEXT (excerpt):\n{excerpt}\n{progress}"
         )
 
-    def _guard(self, action: str, reply: dict, snap):
+    def _guard(self, action: str, reply: dict, snap: Snapshot) -> tuple[bool, str]:
         v = self.allow.check_action(action)
         if not v.allowed:
             return False, v.reason
@@ -257,7 +264,7 @@ class DiscoveryAgent:
                 self.surface.press_enter(el)
             elif action == "read":
                 pass  # observation-only: the post snapshot below is the read
-        except Exception as exc:
+        except Exception as exc:  # surface boundary: timeouts, disconnects, nav races
             return TraceStep(n=n, action=action, element=el, elements=list(snap.elements),
                              value=value, reason=f"driver error: {exc}", pre_path=pre_path)
         post = self.surface.snapshot()
@@ -277,7 +284,7 @@ class DiscoveryAgent:
             text = text.replace("{" + name + "}", example)
         return text
 
-    def _pick(self, reply: dict, snap) -> Element | None:
+    def _pick(self, reply: dict, snap: Snapshot) -> Element | None:
         try:
             idx = int(reply.get("index"))
         except (TypeError, ValueError):
@@ -327,7 +334,8 @@ class DiscoveryAgent:
                 if prog.get("noul", 1.0) < 0.3:
                     return counter + 1
                 return 0
-            except Exception:
+            except Exception as exc:  # Jev is advisory: never fail discovery on it
+                self.elog.line(f"jev decisions call failed, using deterministic rule: {exc}")
                 pass
         return counter + 1
 
@@ -355,6 +363,7 @@ class DiscoveryAgent:
             ControlSession.AUTOMATION if record.resumed else ControlSession.ABORTED,
             why="operator resumed" if record.resumed else "operator aborted",
         )
+        record.transitions = list(cs.transitions)
         self.elog.line(f"DISCOVERY ESCALATION resumed={record.resumed}")
         return record.resumed
 

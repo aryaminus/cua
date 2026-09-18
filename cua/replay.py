@@ -225,7 +225,7 @@ class ReplayEngine:
                 step, "target still valid at act time", f"stale element: {exc}",
                 screenshot=True,
             ) from exc
-        except Exception as exc:
+        except Exception as exc:  # surface boundary: timeouts, disconnects, nav races
             raise self._hard(
                 step, f"{step.action} executed", f"driver error: {exc}", screenshot=True
             ) from exc
@@ -391,7 +391,7 @@ class ReplayEngine:
             ControlSession.AUTOMATION if record.resumed else ControlSession.ABORTED,
             why="operator resumed" if record.resumed else "operator aborted",
         )
-        record.operator_actions.append(f"control-transitions: {cs.transitions}")
+        record.transitions = list(cs.transitions)
         return record
 
     # ------------------------------------------------------------------ guards

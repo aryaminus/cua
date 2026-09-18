@@ -13,12 +13,12 @@
     {
       "step_id": 3,
       "condition": "operator_handoff",
-      "action_taken": "resumed after intervention (12 ops)"
+      "action_taken": "resumed after intervention (11 ops)"
     }
   ],
   "escalation": {
     "reason": "hard failure at step 3: not observed within timeout",
-    "requested_at": "2026-09-18T21:26:25+00:00",
+    "requested_at": "2026-09-18T21:44:08+00:00",
     "operator_actions": [
       "look",
       "  -> url=http://127.0.0.1:8792/lookup?member=1002",
@@ -30,12 +30,25 @@
       "look",
       "  -> url=http://127.0.0.1:8792/member/1002",
       "     | Meridian FCU \u00a0|\u00a0 MemberServ Console 4.2 |  | Member Detail | Name:\tOKAFOR, DANIEL C | Member #:\t1002 | SSN:\t[REDACTED-SSN] | Status:\tACTIVE | Branch:\tRIVERSIDE | Accounts | Account\tBalance\tLast Activity | Savings\t$[REDACTED]\t04/12/2026 | Checking\t$[REDACTED]\t09/02/2026 |  |  | Meridian Federal Credit Union - internal use only. Sessi",
-      "resume",
-      "control-transitions: [{'from': 'AUTOMATION', 'to': 'HUMAN', 'why': 'hard failure at step 3: not observed within timeout', 'at': '2026-09-18T21:26:25+00:00'}, {'from': 'HUMAN', 'to': 'AUTOMATION', 'why': 'operator resumed', 'at': '2026-09-18T21:26:25+00:00'}]"
+      "resume"
+    ],
+    "transitions": [
+      {
+        "from": "AUTOMATION",
+        "to": "HUMAN",
+        "why": "hard failure at step 3: not observed within timeout",
+        "at": "2026-09-18T21:44:08+00:00"
+      },
+      {
+        "from": "HUMAN",
+        "to": "AUTOMATION",
+        "why": "operator resumed",
+        "at": "2026-09-18T21:44:08+00:00"
+      }
     ],
     "resumed": true,
     "intervention_file": "evidence/replay-escalation-handoff/intervention.json"
   },
   "steps_executed": 2,
-  "duration_ms": 3909
+  "duration_ms": 3976
 }
