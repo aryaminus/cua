@@ -24,36 +24,45 @@ params ──► ReplayEngine ──► Surface ──► live app    # no LLM o
                  ReplayResult (closed typed contract)        evidence/ (redacted, generated)
 ```
 
-Judgment calls the spec leaves open, and why:
+Judgment calls the spec leaves open, and why — one per §4 bullet:
 
+- **Language/runtime: Python + Playwright + pydantic + pytest, Hatchling
+  build, uv env.** Python for the schema and the offline determinism suite;
+  sync Playwright for a single-process loop with no async machinery; uv for
+  one-command reproducibility. A second language or service tier adds moving
+  parts with no new brief coverage.
+- **LLM provider: OpenRouter, deepseek-v4.1-flash.** One key serves the chat
+  loop and the Jev decisions endpoint. Loop structure: one typed JSON
+  decision per observation (never free text), `reasoning: disabled` plus the
+  response-healing plugin for stable actions, temp 0 + fixed seed, and a Jev
+  continue/stuck pair asked only when the deterministic no-progress rule
+  fires. Recorded cost: $0.0014 discovery, $0 replay.
+- **Computer-use technology: Playwright DOM automation narrowed to a
+  numbered element table** — not screenshots+coordinates, not raw DOM
+  passthrough. Deterministic, near-zero cost, and structurally the
+  accessibility-tree analog the §4 story needs. Screenshots are failure
+  evidence, not perception; a pixel/OCR front end would feed the same table.
+- **Target: a local Flask mock, not a public site.** Determinism (fixed seed
+  data), fault injection for every §3.3 class, no ToS or credential risk
+  (§9), and evidence any grader can regenerate. The legacy-hostility
+  properties (tables, no test IDs, unassociated labels, non-semantic
+  controls) are reproduced in the mock instead.
+- **Artifact: versioned pydantic JSON (`schema_version: "1.0"`), one file per
+  capability, `draft → approved` gate.** JSON because a human reviewer and a
+  calling agent both read it without tooling; versioned so replay can refuse
+  what it doesn't understand; approval is when a human declares the business
+  outcomes a happy-path run cannot enumerate.
+- **Determinism: role+name locators with declared fallbacks**
+  (`text_contains` → `tag_ordinal`), re-resolved against a fresh snapshot
+  every step; waits as bounded post-condition polls, never sleeps; canonical
+  JSON; configuration-armed faults; five identical replays in
+  `evidence/replay-stability/`.
+- **Architecture: single process, sync, Protocols at every seam.** No
+  queues, services, or workers — explicitly unrewarded — with each seam
+  testable offline (`FakePage`, `FakeLLM`, `ScriptedOperator`).
 - **UI-only by design.** Where an API exists the spec says to integrate
   through it — out of scope here, so the mock exposes none and the system
   never assumes one. This layer exists for the no-API long tail only.
-- **Why a local mock, not a public site:** determinism (fixed seed data),
-  fault injection for every §3.3 class, no ToS or credential risk (§9), and
-  evidence any grader can regenerate. The legacy-hostility properties
-  (tables, no test IDs, unassociated labels, non-semantic controls) are
-  reproduced in the mock instead.
-- **Why a Playwright element-table, not screenshots:** deterministic,
-  near-zero cost, and structurally the accessibility-tree analog the §4 story
-  needs. Screenshots are failure evidence, not perception; a pixel/OCR front
-  end would feed the same table.
-- **Why OpenRouter + deepseek:** one key serves the generative loop and Jev
-  decisions; JSON mode with reasoning off plus response healing for stable
-  typed actions. Recorded cost: $0.0014 discovery, $0 replay — the "reliably
-  and cheaply" half of the capability promise.
-- **The element table is the seam.** One normalized model extracted by
-  `surface.py`; a new driver implements one protocol while schema, replay,
-  and escalation stay untouched (also the §4 story). Sync Playwright, one
-  surface per run — queues/services would be premature infrastructure — with
-  each seam testable offline (`FakePage`, `FakeLLM`, `ScriptedOperator`).
-- **Jev (TypeSafe, via OpenRouter's Decisions API) does one thing:**
-  stuck/no-progress detection in discovery — the planner/decision-point
-  split, without betting the core loop on a week-old service. Failure falls
-  back to deterministic no-progress rules.
-- **Determinism levers:** temp 0 + seed; model-free replay; waits not sleeps;
-  fixed seed data; configuration-armed faults; canonical JSON. Five-run
-  stability in `evidence/replay-stability/`.
 
 ## 2. Artifact schema
 

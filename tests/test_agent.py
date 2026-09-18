@@ -114,3 +114,24 @@ def test_model_never_receives_raw_ssn(tmp_path):
     assert prompts, "no prompts captured"
     joined = "\n".join(prompts)
     assert "411-23-8891" not in joined  # SSN redacted before the model sees it
+
+
+def test_seam_register_every_choice_maps_to_a_tested_module():
+    """§4 pin: each 'your call' bullet must resolve to a surviving documented
+    seam — if a bullet has no module, test, and REPORT paragraph, it rots."""
+    import pathlib
+
+    report = pathlib.Path("REPORT.md").read_text()
+    root = pathlib.Path("cua")
+    mapping = {
+        "Language": ("agent.py", "§1 language/runtime"),
+        "deepseek": ("openrouter.py", "§1 provider"),
+        "element table": ("surface.py", "§1 computer-use technology"),
+        "Flask": ("mockapp.py", "§1 target"),
+        "schema_version": ("schema.py", "§1 artifact + §2"),
+        "post-condition": ("replay.py", "§1 determinism + §3"),
+        "single process": ("cli.py", "§1 architecture"),
+    }
+    for needle, (module, where) in mapping.items():
+        assert (root / module).exists(), f"{where}: {module} missing"
+        assert needle.lower() in report.lower(), f"{where}: {needle!r} not defended"

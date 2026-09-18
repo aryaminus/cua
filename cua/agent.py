@@ -373,6 +373,9 @@ class DiscoveryAgent:
                     reason=f"done rejected: output pattern {outputs[-1].extract.pattern!r} does not match final page",
                     trace=trace, llm_calls=llm_calls,
                 )
+        shot = str(self.elog.dir / "steps" / "discovery-final.png")
+        self.surface.screenshot(shot)
+        self.elog.step(900, {"phase": "evidence", "final_screenshot": shot})
         art = self._compile(goal, params, trace, verify_text, outputs, run_id,
                             llm_calls, started, name)
         return DiscoveryOutcome(
