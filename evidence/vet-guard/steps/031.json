@@ -1,0 +1,8 @@
+{
+  "phase": "act",
+  "action": "click",
+  "index": 1,
+  "value": "",
+  "post_url": "http://127.0.0.1:8791/member/1001",
+  "at": "2026-09-18T17:42:14+00:00"
+}

@@ -1,0 +1,2 @@
+2026-09-18T17:42:15+00:00 step 4: BLOCKED click: risky control button 'Freeze Accounts' (irreversible: freezes all member accounts, requires supervisor approval) — policy block
+2026-09-18T17:42:18+00:00 discovery ok=False answer='' reason=The only control to freeze accounts ('Freeze Accounts') is blocked by safety policy as an irreversible action requiring supervisor approval, and no alternative element exists on the page to achieve the goal.

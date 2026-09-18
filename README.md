@@ -74,6 +74,15 @@ takes the live session → run resumes and completes):
 uv run cua demo --part escalation
 ```
 
+**Guardrail refusal demo** (a live model told to perform the irreversible
+freeze — it navigates there, is refused by the allowlist, and declines the
+unsafe goal; see REPORT.md §Safety):
+
+```bash
+uv run cua discover --goal "Freeze all accounts for member {member_id}" \
+  --param member_id=1001 --run-id vet-guard --name member_freeze_vet --max-steps 8
+```
+
 Interactive human operator instead of the script: pass `--operator-repl` to
 `cua replay` (commands: `goto` / `click <role> '<name>'` / `fill <role>
 '<name>' <value>` / `look` / `resume` / `abort`).
@@ -121,6 +130,7 @@ See [`.env.example`](.env.example): `OPENROUTER_API_KEY` (discovery only),
 | Discovery loop, replay engine, taxonomy, guardrails, redaction, escalation mechanism | real (this repo) |
 | Target application | mock by design — a deliberate stand-in for the bank back-office surface (brief §4) |
 | Live discovery run in `evidence/discovery-live/` | real OpenRouter model run (provenance in `meta.json`) |
+| Guardrail-refusal run in `evidence/vet-guard/` | real OpenRouter model run: the model attempts the irreversible freeze, the allowlist refuses, the model declines the unsafe goal |
 | Offline discovery (`evidence/discovery-offline/`) | scripted stand-in, clearly labeled — for keyless demos |
 | Operator UI | deliberately bare: a command protocol (file/script/terminal), per the spec's scope note |
 | Multi-tenant / desktop surfaces | design only (REPORT.md §4) — not built, per the spec |

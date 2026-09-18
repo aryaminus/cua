@@ -1,0 +1,28 @@
+{
+  "phase": "decide",
+  "url": "http://127.0.0.1:8791/search",
+  "elements": [
+    {
+      "index": 0,
+      "role": "textbox",
+      "name": "Member ID",
+      "value": "",
+      "tag": "input"
+    },
+    {
+      "index": 1,
+      "role": "button",
+      "name": "Search",
+      "value": "Search",
+      "tag": "input"
+    }
+  ],
+  "decision": {
+    "thought": "I'm on the Member Lookup page. I need to enter the member ID 1001 into the textbox and search.",
+    "action": "fill",
+    "index": 0,
+    "value": "{member_id}",
+    "reason": "Enter the member ID to look up."
+  },
+  "at": "2026-09-18T17:42:09+00:00"
+}

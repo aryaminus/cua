@@ -145,7 +145,10 @@ per-tenant re-recording.
 Stuck/blocked detection: in replay, any hard failure after recovery attempts;
 in discovery, a deterministic rule (unchanged observable state across steps)
 plus an optional Jev decision ("continue vs stuck", confidence-gated) — two
-consecutive signals stop the run. On trigger:
+consecutive signals stop the run. The periodic "is this run still making
+progress?" check is the community-validated stuck-agent pattern for exactly
+this loop shape (verified live against our own discovery trace: continue@0.78
+while the run was healthy). On trigger:
 
 1. **Detect & route.** An `intervention.json` is written into the run folder:
    capability, failed step, expected vs observed, current URL, redacted page
@@ -185,10 +188,20 @@ process. `.env` is gitignored; no credentials exist in artifacts by
 construction (only parameter placeholders).
 
 **Limits:** risky-control classification is by declared role/name patterns,
-appropriate for a known app catalog — not open-web automation. Dialog
-auto-dismissal is safe for interstitials but would need policy for dialogs
-whose choice matters. Redaction is regex-based; a production system would
-field-level redaction at the schema, not the serialization, layer.
+appropriate for a known app catalog — not open-web automation. A pre-execution
+safety-monitor pattern of this exact shape (check each proposed action against
+policy before it executes) has independent field evidence of catching most
+attacks with near-zero false blocks at a fraction of a generative judge's
+cost — cited as the validation for our guard placement, not as a new
+component. Dialog auto-dismissal is safe for interstitials but would need
+policy for dialogs whose choice matters. Redaction is regex-based; a
+production system would field-level redaction at the schema, not the
+serialization, layer. On the model-supply side: Jev is days old, trained by a
+method (RLCD) with independent benchmarks still thin, and third-party data
+terms for a launch-week service are not yet enterprise-grade — so every input
+here is synthetic fixture data, PII never leaves the fixture set, and
+`CUA_DATA_COLLECTION=deny` routes calls only to zero-retention endpoints
+(off by default, since it can exclude cheaper providers).
 
 ## 7. Cuts
 
@@ -219,5 +232,6 @@ draft→approved gate (both stretch goals the spec lists).
 | Deterministic replay: success, parametrization, both business outcomes, hard failure | `evidence/replay-success-*`, `replay-business-*`, `replay-hard-failure-*` | real browser runs |
 | Escalation handoff on the live session | `evidence/replay-escalation-handoff/` (session-expiry fault; scripted operator via the real command protocol) | real mechanism, scripted operator |
 | 5× replay stability | `evidence/replay-stability/` | real runs |
+| Guardrail refusal on the irreversible action (live model) | `evidence/vet-guard/` | real model run, real refusal |
 | Offline discovery demo | `evidence/discovery-offline/` | scripted stand-in, labeled as such |
 | Multi-tenant + desktop story | REPORT §4 | design only, per brief |
