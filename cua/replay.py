@@ -70,6 +70,13 @@ class ReplayEngine:
     def run(self, params: dict[str, str]) -> ReplayResult:
         started = time.monotonic()
         escalation = None
+        v = self.allow.check_url(self.art.entry_url)
+        if not v.allowed:
+            failure = Failure(step_id=0, action="goto", expected="entry URL allowed",
+                              observed=v.reason)
+            self.elog.line(f"HARD FAILURE entry: {v.reason}")
+            return self._result("HARD_FAILURE", params, started, failure=failure)
+        self.surface.goto(self.art.entry_url)  # every replay starts at the declared entry
         try:
             result = self._execute_steps(self.art.steps, params, started)
         except _HardFailure as hf:
@@ -85,7 +92,9 @@ class ReplayEngine:
                 else:
                     try:
                         remaining = [s for s in self.art.steps if s.id >= hf.failure.step_id]
-                        result = self._execute_steps(remaining, params, started, escalation)
+                        result = self._execute_steps(
+                            remaining, params, started, escalation, resuming=True
+                        )
                         self._record_recovery(
                             hf.step or self.art.steps[0],
                             "operator_handoff",
@@ -107,9 +116,21 @@ class ReplayEngine:
     # ------------------------------------------------------------------ engine
 
     def _execute_steps(
-        self, steps: list[Step], params: dict[str, str], started: float, escalation=None
+        self, steps: list[Step], params: dict[str, str], started: float,
+        escalation=None, resuming: bool = False,
     ) -> ReplayResult:
         for step in steps:
+            if resuming and step.wait is not None:
+                # After a handoff, the operator may have completed the failed
+                # step themselves. A step whose post-condition already holds
+                # (and shows no business outcome) is done — skip it.
+                pre = self._settle()
+                if self._check(step.wait, pre, params) and not self._check_outcomes(pre, params):
+                    self._record_recovery(
+                        step, "skipped_postcondition_held",
+                        "step already satisfied after operator handoff",
+                    )
+                    continue
             self._execute(step, params)  # includes post-conditions + outcome-aware waits
             self.steps_executed += 1
             snap = self._settle()

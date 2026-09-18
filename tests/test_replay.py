@@ -108,11 +108,11 @@ def test_unexpected_dialog_recorded_as_recovery(tmp_path):
     cfg = json.loads(json.dumps(CFG))
     cfg["forbidden_elements"] = []  # permit the freeze click so the dialog fires
     art = lookup_artifact(tmp_path)
+    art.entry_url = "http://127.0.0.1:8791/member/1001"
     art.steps = [Step(id=1, action="click",
                       target=Locator(role="button", name="Freeze Accounts"))]
     art.checkpoint = Check(text_contains="Member Detail")  # still on detail page
     page = FakePage()
-    page.goto("http://127.0.0.1:8791/member/1001")
     run = RunLog(tmp_path / "evidence", "dialog-run")
     run.meta(mode="test")
     eng = ReplayEngine(page, art, Allowlist(cfg), run, allow_draft=True)

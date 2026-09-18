@@ -22,15 +22,39 @@ class OpenRouterError(RuntimeError):
     pass
 
 
+def _loads_forgiving(content: str) -> dict:
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # salvage the outermost JSON object (models sometimes wrap in prose
+        # or code fences despite json_object mode)
+        start, end = content.find("{"), content.rfind("}")
+        if start >= 0 and end > start:
+            return json.loads(content[start : end + 1])
+        raise
+
+
 class OpenRouter:
     def __init__(self, api_key: str | None = None):
         self.key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
         if not self.key:
             raise OpenRouterError("OPENROUTER_API_KEY not set (see .env.example)")
         self._client = httpx.Client(
-            headers={"Authorization": f"Bearer {self.key}"}, timeout=TIMEOUT_S
+            base_url=BASE,
+            headers={"Authorization": f"Bearer {self.key}"},
+            timeout=TIMEOUT_S,
         )
         self.spent_usd = 0.0
+        # Optional privacy posture (see REPORT.md §Safety): when
+        # CUA_DATA_COLLECTION=deny, OpenRouter routes only to providers that do
+        # not retain prompts. Off by default — it can exclude cheaper providers.
+        dc = os.environ.get("CUA_DATA_COLLECTION", "").strip().lower()
+        self._provider = {"data_collection": "deny"} if dc == "deny" else None
+
+    def _body(self, body: dict) -> dict:
+        if self._provider:
+            body["provider"] = self._provider
+        return body
 
     # ------------------------------------------------------------ generative --
 
@@ -42,9 +66,15 @@ class OpenRouter:
         *,
         seed: int = 7,
         temperature: float = 0.0,
-        max_tokens: int = 700,
+        max_tokens: int = 3000,
+        attempts: int = 2,
     ) -> tuple[dict, dict]:
-        """Chat completion constrained to JSON. Returns (parsed_json, usage)."""
+        """Chat completion constrained to JSON. Returns (parsed_json, usage).
+
+        Robustness ladder (bounded, never silent): OpenRouter's response
+        healing plugin, then a salvage parse of the outermost {...} block,
+        then one full retry. After `attempts` failures we raise.
+        """
         body = {
             "model": model,
             "messages": [{"role": "system", "content": system}, *messages],
@@ -52,24 +82,32 @@ class OpenRouter:
             "temperature": temperature,
             "seed": seed,
             "max_tokens": max_tokens,
+            # The action loop wants one small JSON object, not deliberation:
+            # disabling reasoning keeps replies terse, cheap, and stable.
+            "reasoning": {"enabled": False},
+            "plugins": [{"id": "response-healing"}],
         }
-        r = self._client.post("/v1/chat/completions", json=body)
-        if r.status_code != 200:
-            raise OpenRouterError(f"chat {r.status_code}: {r.text[:300]}")
-        data = r.json()
-        usage = data.get("usage", {})
-        self.spent_usd += usage.get("cost") or 0.0
-        try:
-            content = data["choices"][0]["message"]["content"] or ""
-            return json.loads(content), usage
-        except (KeyError, json.JSONDecodeError) as exc:
-            raise OpenRouterError(f"unparseable chat reply: {exc}: {str(data)[:300]}") from exc
+        body = self._body(body)
+        last_err = ""
+        for _ in range(attempts):
+            r = self._client.post("/v1/chat/completions", json=body)
+            if r.status_code != 200:
+                raise OpenRouterError(f"chat {r.status_code}: {r.text[:300]}")
+            data = r.json()
+            usage = data.get("usage", {})
+            self.spent_usd += usage.get("cost") or 0.0
+            try:
+                content = data["choices"][0]["message"]["content"] or ""
+                return _loads_forgiving(content), usage
+            except (KeyError, json.JSONDecodeError) as exc:
+                last_err = f"{exc}: {str(data)[:200]}"
+        raise OpenRouterError(f"unparseable chat reply after {attempts} attempts: {last_err}")
 
     # -------------------------------------------------------------- decisions --
 
     def decide(self, model: str, state: dict, questions: dict) -> dict:
         """Jev-style decisions: typed questions, typed answers, no free text."""
-        body = {"model": model, "state": state, "questions": questions}
+        body = self._body({"model": model, "state": state, "questions": questions})
         r = self._client.post("/alpha/decisions", json=body)
         if r.status_code != 200:
             raise OpenRouterError(f"decisions {r.status_code}: {r.text[:300]}")

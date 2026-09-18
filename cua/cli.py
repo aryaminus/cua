@@ -69,10 +69,17 @@ LOOKUP_OUTCOMES = [
 
 
 def _ensure_server() -> None:
-    """Start the mock app in-process (idempotent) for demo/replay commands."""
+    """Start the mock app in-process (idempotent — also against an external one)."""
     global _srv
     if _srv is not None:
         return
+    import httpx
+
+    try:
+        if httpx.get(APP_URL, timeout=2).status_code == 200:
+            return  # an external `cua serve` (or demo server) already runs
+    except httpx.HTTPError:
+        pass
     from werkzeug.serving import make_server
 
     mockapp.reset_state()
@@ -110,7 +117,8 @@ def cmd_discover(args) -> None:
             surface, llm, allow, run, model=model, decisions_model=jev,
             max_steps=args.max_steps, operator=None,
         )
-        out = agent.run(args.goal, args.entry or APP_URL, param_spec, args.run_id)
+        out = agent.run(args.goal, args.entry or APP_URL, param_spec, args.run_id,
+                        name=args.name)
     finally:
         surface.close()
     run.line(f"discovery ok={out.ok} answer={out.answer!r} reason={out.reason}")
@@ -331,6 +339,7 @@ def main(argv=None) -> None:
 
     s = sub.add_parser("discover", help="LLM-driven discovery run -> draft artifact")
     s.add_argument("--goal", required=True)
+    s.add_argument("--name", default=None, help="capability name (default: derived from goal)")
     s.add_argument("--param", action="append", default=[], metavar="name=example")
     s.add_argument("--entry", default=None, help="entry URL (default $CUA_APP_URL)")
     s.add_argument("--max-steps", type=int, default=12)

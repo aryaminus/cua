@@ -1,0 +1,13 @@
+{
+  "mode": "replay",
+  "artifact": "evidence/discovery-live/artifact.json",
+  "params": {
+    "member_id": "1001"
+  },
+  "allowlist": "None",
+  "stability": 1,
+  "started_at": "2026-09-18T17:29:58+00:00",
+  "status": "SUCCESS",
+  "steps_executed": 3,
+  "finished_at": "2026-09-18T17:29:59+00:00"
+}

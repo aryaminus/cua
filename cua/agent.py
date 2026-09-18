@@ -121,6 +121,7 @@ class DiscoveryAgent:
         entry_url: str,
         params: dict[str, Param],
         run_id: str,
+        name: str | None = None,
     ) -> DiscoveryOutcome:
         started = time.monotonic()
         self._examples = {name: p.example for name, p in params.items()}
@@ -146,7 +147,7 @@ class DiscoveryAgent:
             llm_calls += 1
             action = reply.get("action", "")
             self.elog.step(
-                n,
+                n * 10,
                 {
                     "phase": "decide",
                     "url": snap.url,
@@ -156,7 +157,8 @@ class DiscoveryAgent:
             )
 
             if action == "done":
-                return self._finish(goal, params, reply, trace, llm_calls, run_id, started, stuck_counter)
+                return self._finish(goal, params, reply, trace, llm_calls, run_id,
+                                    started, stuck_counter, name)
             if action == "fail":
                 return DiscoveryOutcome(False, reason=reply.get("reason", "model gave up"), trace=trace, llm_calls=llm_calls)
 
@@ -238,7 +240,7 @@ class DiscoveryAgent:
                              reason=f"driver error: {exc}", pre_path=pre_path)
         post = self.surface.snapshot()
         self.elog.step(
-            n,
+            n * 10 + 1,
             {"phase": "act", "action": action, "index": el.index if el else None,
              "value": value, "post_url": post.url},
         )
@@ -336,7 +338,8 @@ class DiscoveryAgent:
 
     # ------------------------------------------------------------------ finish
 
-    def _finish(self, goal, params, reply, trace, llm_calls, run_id, started, stuck_signals) -> DiscoveryOutcome:
+    def _finish(self, goal, params, reply, trace, llm_calls, run_id, started,
+                stuck_signals, name=None) -> DiscoveryOutcome:
         verify_text = str(reply.get("verify_text", ""))
         snap = self.surface.snapshot()
         if not verify_text or verify_text.lower() not in snap.text.lower():
@@ -358,13 +361,15 @@ class DiscoveryAgent:
                     reason=f"done rejected: output pattern {outputs[-1].extract.pattern!r} does not match final page",
                     trace=trace, llm_calls=llm_calls,
                 )
-        art = self._compile(goal, params, trace, verify_text, outputs, run_id, llm_calls, started)
+        art = self._compile(goal, params, trace, verify_text, outputs, run_id,
+                            llm_calls, started, name)
         return DiscoveryOutcome(
             ok=True, artifact=art, answer=str(reply.get("answer", "")),
             trace=trace, llm_calls=llm_calls, stuck_signals=stuck_signals,
         )
 
-    def _compile(self, goal, params, trace, verify_text, outputs, run_id, llm_calls, started) -> Artifact:
+    def _compile(self, goal, params, trace, verify_text, outputs, run_id,
+                  llm_calls, started, name=None) -> Artifact:
         examples = {p.example: name for name, p in params.items()}
         steps: list[Step] = []
 
@@ -394,7 +399,7 @@ class DiscoveryAgent:
                 )
             )
         return Artifact(
-            capability_name=_cap_name(goal),
+            capability_name=name or _cap_name(goal),
             description=f"Discovered from goal: {goal}",
             app="meridian-fcu/memberserv (mock)",
             entry_url=self._entry(trace),
@@ -421,9 +426,14 @@ class DiscoveryAgent:
         return trace[0].pre_url if trace else ""
 
 
+_STOP = {"look", "up", "the", "a", "and", "their", "its", "for", "this", "report",
+         "current", "find", "open", "get", "read", "of", "to", "in", "on", "with"}
+
+
 def _cap_name(goal: str) -> str:
-    words = [w for w in goal.lower().split() if w.isalpha()][:4]
-    return "lookup_" + "_".join(w.strip(",.") for w in words[1:]) if words else "capability"
+    words = [w.strip(",.{}") for w in goal.lower().split()]
+    words = [w for w in words if w.isalpha() and w not in _STOP][:3]
+    return "_".join(words) if words else "capability"
 
 
 def _path(url: str) -> str:

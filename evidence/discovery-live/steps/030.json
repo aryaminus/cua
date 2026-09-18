@@ -1,0 +1,28 @@
+{
+  "phase": "decide",
+  "url": "http://127.0.0.1:8791/search",
+  "elements": [
+    {
+      "index": 0,
+      "role": "textbox",
+      "name": "Member ID",
+      "value": "1001",
+      "tag": "input"
+    },
+    {
+      "index": 1,
+      "role": "button",
+      "name": "Search",
+      "value": "Search",
+      "tag": "input"
+    }
+  ],
+  "decision": {
+    "thought": "The member ID 1001 is entered. Now I'll click Search to look up the member.",
+    "action": "click",
+    "index": 1,
+    "value": "",
+    "reason": "Submit the member ID search."
+  },
+  "at": "2026-09-18T17:22:26+00:00"
+}

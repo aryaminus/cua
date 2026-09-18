@@ -25,3 +25,6 @@ evidence/scratch/
 
 # Operator session state
 *.operator-session.json
+
+# Operator model slice from `cua vet-guard` (see cua/openrouter.py): additive-only,
+# additive-only protective gate, refreshed upstream; never hand-edit its internals.

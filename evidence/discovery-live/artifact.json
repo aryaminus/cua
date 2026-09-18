@@ -1,0 +1,132 @@
+{
+  "schema_version": "1.0",
+  "capability_name": "member_savings_lookup",
+  "description": "Discovered from goal: Look up member {member_id} and report their current savings balance",
+  "app": "meridian-fcu/memberserv (mock)",
+  "entry_url": "http://127.0.0.1:8791/",
+  "status": "approved",
+  "inputs": [
+    {
+      "name": "member_id",
+      "type": "string",
+      "required": true,
+      "description": "member_id (from CLI)",
+      "example": "1001"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "savings_balance",
+      "type": "string",
+      "description": "",
+      "extract": {
+        "kind": "regex",
+        "pattern": "Savings\\s+\\$([\\d,]+\\.\\d{2})",
+        "group": 1
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": 1,
+      "action": "click",
+      "target": {
+        "role": "clicktext",
+        "name": "Member Lookup",
+        "fallbacks": [
+          {
+            "kind": "tag_ordinal",
+            "tag": "div",
+            "ordinal": 0
+          }
+        ]
+      },
+      "value": null,
+      "wait": {
+        "url_contains": "/search",
+        "text_contains": null,
+        "element_present": null
+      },
+      "rationale": "Member Lookup is the entry point for looking up a member's account."
+    },
+    {
+      "id": 2,
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": "Member ID",
+        "fallbacks": [
+          {
+            "kind": "tag_ordinal",
+            "tag": "input",
+            "ordinal": 0
+          }
+        ]
+      },
+      "value": "{member_id}",
+      "wait": null,
+      "rationale": "Enter the member ID into the search field."
+    },
+    {
+      "id": 3,
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Search",
+        "fallbacks": [
+          {
+            "kind": "tag_ordinal",
+            "tag": "input",
+            "ordinal": 0
+          }
+        ]
+      },
+      "value": null,
+      "wait": {
+        "url_contains": "/member/{member_id}",
+        "text_contains": null,
+        "element_present": null
+      },
+      "rationale": "Submit the member ID search."
+    }
+  ],
+  "checkpoint": {
+    "url_contains": null,
+    "text_contains": "Member Detail",
+    "element_present": null
+  },
+  "outcomes": [
+    {
+      "id": "NOT_FOUND",
+      "description": "No member exists for the requested ID — a legitimate answer, not a failure.",
+      "detect": {
+        "url_contains": null,
+        "text_contains": "No member found",
+        "element_present": null
+      },
+      "returns": {
+        "message": "No member found for ID {member_id}"
+      }
+    },
+    {
+      "id": "INVALID_INPUT",
+      "description": "The supplied ID failed validation (non-numeric).",
+      "detect": {
+        "url_contains": null,
+        "text_contains": "Member ID must be numeric",
+        "element_present": null
+      },
+      "returns": {
+        "message": "Invalid member ID supplied ({member_id})"
+      }
+    }
+  ],
+  "provenance": {
+    "run_id": "discovery-live",
+    "recorded_at": "2026-09-18T17:22:29Z",
+    "model": "deepseek/deepseek-v4.1-flash",
+    "decisions_model": "typesafe/jev-1.13",
+    "steps_llm_calls": 4,
+    "cost_usd": 0.001374
+  }
+}
