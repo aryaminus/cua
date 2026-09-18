@@ -1,0 +1,23 @@
+# Netlify configuration for the cua project site.
+#
+# The site is fully self-contained static HTML/CSS in `site/`. All document
+# links (README.md, DESIGN.md, evidence/*) point directly to their GitHub
+# blob URLs, where GitHub renders the markdown with full formatting, tables,
+# and syntax highlighting. No build step or file copying is required.
+
+[build]
+  publish = "site"
+  command = ""
+
+# Serve index.html for the site root (Netlify does this by default, but be
+# explicit so a missing trailing slash never 404s).
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+
+# Long-cache the static stylesheet.
+[[headers]]
+  for = "/style.css"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

@@ -124,6 +124,7 @@ config/allowlist.json   origins, routes, action types, risky-control patterns
 config/budgets.json     runtime budgets: timeouts, retries, cost/steps caps (DESIGN.md §7)
 tests/            76 tests: offline engine suite + real-browser integration
 evidence/         generated run records (see evidence/README.md)
+site/             static project page (self-contained; deploys to Netlify as-is)
 DESIGN.md         the eight-section design write-up
 ```
 
