@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "capability_name": "lookup_up_member_and",
+  "capability_name": "member_savings_balance",
   "description": "Discovered from goal: Look up member {member_id} and report their current savings balance",
   "app": "meridian-fcu/memberserv (mock)",
   "entry_url": "http://127.0.0.1:8791/search",
@@ -109,7 +109,7 @@
   ],
   "provenance": {
     "run_id": "discovery-offline",
-    "recorded_at": "2026-09-18T16:29:49Z",
+    "recorded_at": "2026-09-18T18:38:38Z",
     "model": "fake-llm",
     "decisions_model": null,
     "steps_llm_calls": 4,

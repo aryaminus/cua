@@ -1,13 +1,17 @@
 {
-  "capability": "lookup_up_member_and",
-  "reason": "hard failure at step 0: not observed on final state",
-  "failed_step": null,
-  "expected": "checkpoint: page shows 'Member Detail'",
-  "observed": "not observed on final state",
-  "current_url": "http://127.0.0.1:8791/member/1002",
+  "capability": "member_savings_balance",
+  "reason": "hard failure at step 3: not observed within timeout",
+  "failed_step": {
+    "id": 3,
+    "action": "click",
+    "wait": "url contains '/member/{member_id}'"
+  },
+  "expected": "post-condition: url contains '/member/{member_id}'",
+  "observed": "not observed within timeout",
+  "current_url": "http://127.0.0.1:8792/lookup?member=1002",
   "page_text_excerpt": "Meridian FCU \u00a0|\u00a0 MemberServ Console 4.2\n\nSession Expired\nYour session has expired due to inactivity.\nPlease log in again to continue.\n\nMeridian Federal Credit Union - internal use only. Session ID 88451-X.",
   "screenshot": "evidence/replay-escalation-handoff/steps/escalation.png",
   "operator_commands": "goto/click/fill/look/resume/abort",
-  "requested_at": "2026-09-18T16:29:58+00:00",
+  "requested_at": "2026-09-18T18:38:50+00:00",
   "intervention_file": "evidence/replay-escalation-handoff/intervention.json"
 }

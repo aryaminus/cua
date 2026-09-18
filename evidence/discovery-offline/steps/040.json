@@ -1,0 +1,28 @@
+{
+  "phase": "decide",
+  "url": "http://127.0.0.1:8791/member/1001",
+  "elements": [
+    {
+      "index": 0,
+      "role": "button",
+      "name": "Freeze Accounts",
+      "value": "Freeze Accounts",
+      "tag": "input"
+    }
+  ],
+  "decision": {
+    "thought": "goal state reached",
+    "action": "done",
+    "verify_text": "Member Detail",
+    "outputs": [
+      {
+        "name": "savings_balance",
+        "pattern": "Savings\\s*\\$([\\d,]+\\.\\d{2})",
+        "group": 1,
+        "value_hint": "current savings balance"
+      }
+    ],
+    "answer": "savings balance read from the member detail page"
+  },
+  "at": "2026-09-18T18:38:38+00:00"
+}

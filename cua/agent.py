@@ -52,9 +52,13 @@ Actions:
 Rules:
 - Only reference element indexes from the CURRENT table.
 - If the text to type is a provided parameter, emit the placeholder exactly, e.g. "{member_id}".
-- done: verify_text MUST be a short string visible on the final page proving the goal state.
-  It must be page furniture that holds for ANY parameter value (e.g. the page heading
-  "Member Detail"), never parameter-specific data like a member name.
+- Page text may carry [REDACTED] masks for privacy; the underlying page
+  still holds the real values, so keep acting on real elements and let
+  outputs/extract patterns reference the underlying text, not the mask.
+- done: verify_text MUST be a short UNREDACTED string visible on the final
+  page proving the goal state. It must be page furniture that holds for ANY
+  parameter value (e.g. the page heading "Member Detail"), never
+  parameter-specific data like a member name, and never a masked value.
   outputs are regexes over the page text; pattern must contain exactly one capture group for the value.
 - Never invent elements. If blocked, reason about what the page offers.
 """

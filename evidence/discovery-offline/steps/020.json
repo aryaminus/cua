@@ -6,7 +6,7 @@
       "index": 0,
       "role": "textbox",
       "name": "Member ID",
-      "value": "1001",
+      "value": "",
       "tag": "input"
     },
     {
@@ -18,11 +18,11 @@
     }
   ],
   "decision": {
-    "thought": "The member ID is filled in. Now I'll click Search to look up the member.",
-    "action": "click",
-    "index": 1,
-    "value": "",
-    "reason": "Submit the search to find member 1001."
+    "thought": "type the member id",
+    "action": "fill",
+    "index": 0,
+    "value": "{member_id}",
+    "reason": "parameterized member id goes in the only textbox"
   },
-  "at": "2026-09-18T18:05:51+00:00"
+  "at": "2026-09-18T18:38:38+00:00"
 }

@@ -68,23 +68,35 @@ LOOKUP_OUTCOMES = [
 ]
 
 
-def _ensure_server() -> None:
-    """Start the mock app in-process (idempotent — also against an external one)."""
-    global _srv
-    if _srv is not None:
-        return
-    import httpx
+def _ensure_server(port: int = 8791) -> None:
+    """Start the mock app in-process (idempotent per port).
 
+    Fault switches ride on process env vars and are read per request, so the
+    in-process server inherits whatever the demo armed. Runs on `port` so a
+    demo can pick a fault port that never collides with an external `cua
+    serve`, and re-point the replay at it via CUA_APP_URL.
+    """
+    global _srv
+    if isinstance(_srv, dict):
+        servers = _srv
+    else:
+        servers = {}
+        _srv = servers
+    if port in servers:
+        return
+    import socket
+
+    probe = socket.socket()
     try:
-        if httpx.get(APP_URL, timeout=2).status_code == 200:
-            return  # an external `cua serve` (or demo server) already runs
-    except httpx.HTTPError:
-        pass
+        if probe.connect_ex(("127.0.0.1", port)) == 0:
+            return  # something already serves this port — use it
+    finally:
+        probe.close()
     from werkzeug.serving import make_server
 
     mockapp.reset_state()
-    _srv = make_server("127.0.0.1", 8791, mockapp.app, threaded=False)
-    threading.Thread(target=_srv.serve_forever, daemon=True).start()
+    servers[port] = make_server("127.0.0.1", port, mockapp.app, threaded=False)
+    threading.Thread(target=servers[port].serve_forever, daemon=True).start()
 
 
 _srv = None
@@ -167,8 +179,7 @@ def cmd_replay(args) -> None:
         from .escalation import TerminalOperator
 
         operator = TerminalOperator()
-    _ensure_server()
-
+    _ensure_server()  # standalone boots the default port; the demo re-points via CUA_APP_URL
     surface = PlaywrightSurface(headless=not args.headed)
     try:
         engine = ReplayEngine(surface, art, allow, run, operator=operator,
@@ -195,9 +206,14 @@ def cmd_replay(args) -> None:
 
 
 def cmd_demo(args) -> None:
+    # Boot the default-port server once for the fault-free phases. Fault
+    # phases (matrix fault case, escalation) each boot a dedicated server on
+    # their own port so an external `cua serve` on 8791 never collides.
     _ensure_server()
     allow = Allowlist.load()
     base = Path(args.evidence_root) if args.evidence_root else EVIDENCE
+
+    app_base = {"url": APP_URL}  # mutable base: fault phases re-point it
 
     if args.part in ("discovery-offline", "all"):
         run = RunLog(base, "discovery-offline")
@@ -213,7 +229,7 @@ def cmd_demo(args) -> None:
                                          description="member number to look up")}
             out = agent.run(
                 "Look up member {member_id} and report their current savings balance",
-                APP_URL + "/search", params, "discovery-offline",
+                app_base["url"] + "/search", params, "discovery-offline",
             )
         finally:
             surface.close()
@@ -232,7 +248,6 @@ def cmd_demo(args) -> None:
 
     if args.part in ("matrix", "all"):
         art = Artifact.model_validate_json(art_path.read_text())
-        art = Artifact.model_validate_json(art_path.read_text())
         cases = [
             ("success-1001", {"member_id": "1001"}, {}, "SUCCESS"),
             ("success-1002-parametrized", {"member_id": "1002"}, {}, "SUCCESS"),
@@ -242,38 +257,59 @@ def cmd_demo(args) -> None:
              {"MOCKAPP_FAULT": "server_error_member_1003"}, "HARD_FAILURE"),
         ]
         for run_id, params, env, expect in cases:
-            old = {k: os.environ.get(k) for k in env}
-            os.environ.update(env)
-            mockapp.reset_state()
-            try:
+            from .safety import Allowlist as _MatrixAllow
+
+            _matrix_allow = _MatrixAllow.load()
+            # The fault case replays against a dedicated fault server on a
+            # private port with a port-rewritten artifact copy, so it never
+            # collides with an external `cua serve` on 8791.
+            art_use = art
+            fault_allow = _matrix_allow
+            if env:
+                fault_base = "http://127.0.0.1:8793"
+                saved = {k: os.environ.get(k) for k in set(env)}
+                os.environ.update(env)
+                mockapp.reset_state()
+                _ensure_server(port=8793)
+                art_use, fault_allow = _port_rewrite(art, APP_URL, fault_base, _matrix_allow)
                 run = RunLog(base, f"replay-{run_id}")
                 run.meta(mode="replay-matrix", case=run_id, params=params, env=env)
-                surface = PlaywrightSurface(headless=True)
-                try:
-                    r = ReplayEngine(surface, art, allow, run, allow_draft=True).run(params)
-                finally:
-                    surface.close()
-                run.line(f"case {run_id}: {r.summarize()}")
-                mark = "OK " if r.status == expect else "UNEXPECTED"
-                print(f"[matrix] {mark} {run_id}: {r.summarize()}")
-            finally:
-                for k, v in old.items():
-                    if v is None:
-                        os.environ.pop(k, None)
-                    else:
-                        os.environ[k] = v
+            else:
                 mockapp.reset_state()
+                run = RunLog(base, f"replay-{run_id}")
+                run.meta(mode="replay-matrix", case=run_id, params=params, env=env)
+            surface = PlaywrightSurface(headless=True)
+            try:
+                r = ReplayEngine(surface, art_use,
+                                 fault_allow if env else _matrix_allow, run,
+                                 allow_draft=True).run(params)
+            finally:
+                surface.close()
+                if env:
+                    for k, v in saved.items():
+                        if v is None:
+                            os.environ.pop(k, None)
+                        else:
+                            os.environ[k] = v
+                    mockapp.reset_state()
+            run.line(f"case {run_id}: {r.summarize()}")
+            mark = "OK " if r.status == expect else "UNEXPECTED"
+            print(f"[matrix] {mark} {run_id}: {r.summarize()}")
 
     if args.part in ("escalation", "all"):
         art = Artifact.model_validate_json(art_path.read_text())
+        fault_base = "http://127.0.0.1:8792"
+        saved = {k: os.environ.get(k) for k in ("MOCKAPP_SESSION_TTL",)}
         os.environ["MOCKAPP_SESSION_TTL"] = "2"
         mockapp.reset_state()
+        _ensure_server(port=8792)
+        art8792, allow8792 = _port_rewrite(art, APP_URL, fault_base, allow)
         run = RunLog(base, "replay-escalation-handoff")
         run.meta(mode="escalation-demo", params={"member_id": "1002"},
                  env={"MOCKAPP_SESSION_TTL": "2"},
                  note="session expiry forces hard failure; operator takes the live session")
         script = (
-            "look; goto " + APP_URL + "/; goto " + APP_URL + "/search; "
+            "look; goto " + fault_base + "/; goto " + fault_base + "/search; "
             "fill textbox 'Member ID' 1002; click button 'Search'; look; resume"
         )
         from .escalation import ScriptedOperator
@@ -281,14 +317,18 @@ def cmd_demo(args) -> None:
         surface = PlaywrightSurface(headless=True)
         try:
             engine = ReplayEngine(
-                surface, art, allow, run, operator=ScriptedOperator(
+                surface, art8792, allow8792, run, operator=ScriptedOperator(
                     [c.strip() for c in script.split(";")]),
                 allow_draft=True,
             )
             r = engine.run({"member_id": "1002"})
         finally:
             surface.close()
-            os.environ.pop("MOCKAPP_SESSION_TTL", None)
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
             mockapp.reset_state()
         expect = "SUCCESS"
         good = r.status == expect and r.escalation and r.escalation.resumed
@@ -316,6 +356,43 @@ def cmd_demo(args) -> None:
 
 
 # ------------------------------------------------------------------ plumbing --
+
+def _port_rewrite(artifact: Artifact, src_base: str, dst_base: str,
+                  allowlist: Allowlist) -> tuple[Artifact, Allowlist]:
+    """Copy an artifact onto a demo server port, widening the allowlist copy
+    to that origin. Fault-demo phases use this so they never collide with an
+    external `cua serve` on 8791.
+    """
+    from copy import deepcopy
+
+    raw = artifact.model_dump()
+
+    def _swap(v):
+        return v.replace(src_base, dst_base) if isinstance(v, str) else v
+
+    raw["entry_url"] = _swap(raw.get("entry_url"))
+    for st in raw.get("steps", []):
+        st["value"] = _swap(st.get("value"))
+        wait = st.get("wait") or {}
+        for k in ("url_contains", "text_contains"):
+            if isinstance(wait.get(k), str):
+                wait[k] = _swap(wait[k])
+        tgt = st.get("target") or {}
+        for fb in tgt.get("fallbacks", []) or []:
+            for k in ("text",):
+                if isinstance(fb.get(k), str):
+                    fb[k] = _swap(fb[k])
+    for o in raw.get("outcomes", []):
+        det = o.get("detect") or {}
+        for k in ("url_contains", "text_contains"):
+            if isinstance(det.get(k), str):
+                det[k] = _swap(det[k])
+        o["returns"] = {k2: _swap(v2) for k2, v2 in (o.get("returns") or {}).items()}
+    allow2 = deepcopy(allowlist)
+    if dst_base not in allow2.origins:
+        allow2.origins = list(allow2.origins) + [dst_base]
+    return Artifact.model_validate(raw), allow2
+
 
 def _parse_params(pairs: list[str]) -> dict[str, str]:
     out = {}

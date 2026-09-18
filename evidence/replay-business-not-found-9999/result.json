@@ -1,5 +1,5 @@
 {
-  "artifact": "lookup_up_member_and",
+  "artifact": "member_savings_balance",
   "params_redacted": {
     "member_id": "9999"
   },
@@ -12,5 +12,5 @@
   "recoveries": [],
   "escalation": null,
   "steps_executed": 3,
-  "duration_ms": 599
+  "duration_ms": 582
 }

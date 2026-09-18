@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import re
 import time
+from urllib.parse import urlparse
 
 from .evidence import RunLog
 from .safety import Allowlist, redact_text
@@ -91,7 +92,15 @@ class ReplayEngine:
                     )
                 else:
                     try:
-                        remaining = [s for s in self.art.steps if s.id >= hf.failure.step_id]
+                        # Rewind only when needed: if the failed step's wait does
+                        # not hold yet, re-establish the declared entry state
+                        # (the operator may have left the session on a terminal
+                        # page); otherwise the operator already fixed the state.
+                        remaining = self._remaining_after(hf.step)
+                        if hf.step is not None and hf.step.wait is not None:
+                            snap = self.surface.snapshot()
+                            if not self._resume_wait_holds(hf.step.wait, snap, params):
+                                self.surface.goto(self.art.entry_url)
                         result = self._execute_steps(
                             remaining, params, started, escalation, resuming=True
                         )
@@ -113,6 +122,12 @@ class ReplayEngine:
         self.elog.finish(status=result.status, steps_executed=self.steps_executed)
         return result
 
+    def _remaining_after(self, step: Step | None) -> list[Step]:
+        """Steps to re-execute after a handoff. Step ids start at 1; a final
+        checkpoint failure carries ``step=None`` (id 0), so every step re-runs."""
+        anchor = step.id if step is not None else 0
+        return [s for s in self.art.steps if s.id > anchor]
+
     # ------------------------------------------------------------------ engine
 
     def _execute_steps(
@@ -122,10 +137,18 @@ class ReplayEngine:
         for step in steps:
             if resuming and step.wait is not None:
                 # After a handoff, the operator may have completed the failed
-                # step themselves. A step whose post-condition already holds
-                # (and shows no business outcome) is done — skip it.
+                # step itself. A step whose post-condition already holds (and
+                # shows no business outcome) is done — skip it instead of
+                # re-executing steps onto a state that has moved on.
+                # Legacy URL-substring waits are fuzzy by design (they carry
+                # {params} and are compiled from observed paths), so the skip
+                # must be segment-aware: e.g. "/member/" must not match
+                # "/search". Keep `in` for exact hits; otherwise require the
+                # key's alphabetic core to appear in a path segment.
                 pre = self._settle()
-                if self._check(step.wait, pre, params) and not self._check_outcomes(pre, params):
+                if self._resume_wait_holds(step.wait, pre, params) and not self._check_outcomes(
+                    pre, params
+                ):
                     self._record_recovery(
                         step, "skipped_postcondition_held",
                         "step already satisfied after operator handoff",
@@ -261,6 +284,27 @@ class ReplayEngine:
             return want.lower() in snap.text.lower()
         if check.element_present:
             return resolve(check.element_present, snap) is not None
+        return False
+
+    def _resume_wait_holds(self, check: Check, snap: Snapshot, params: dict[str, str]) -> bool:
+        """Stricter variant of _check used only for resume-skips: textual and
+        element waits are exact, and URL-substring waits additionally require
+        the wait's core path letters (e.g. 'member') to appear in a segment of
+        the live path — so '/member/' cannot 'match' '/search'."""
+        if check.text_contains:
+            return self._check(check, snap, params)
+        if check.element_present:
+            return self._check(check, snap, params)
+        if check.url_contains:
+            want = self.art.resolve_value(check.url_contains, params)
+            if want not in snap.url:
+                return False
+            live_path = urlparse(snap.url).path.strip("/").split("/")
+            core = [seg for seg in want.strip("/").split("/") if re.search(r"[a-zA-Z]", seg)]
+            return any(
+                seg.lower() in {p.lower() for p in live_path if re.search(r"[a-zA-Z]", p)}
+                for seg in core
+            )
         return False
 
     def _extract(self) -> dict[str, str]:

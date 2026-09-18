@@ -1,5 +1,5 @@
 {
-  "artifact": "lookup_up_member_and",
+  "artifact": "member_savings_balance",
   "params_redacted": {
     "member_id": "1002"
   },
@@ -11,29 +11,29 @@
   "failure": null,
   "recoveries": [
     {
-      "step_id": 1,
+      "step_id": 3,
       "condition": "operator_handoff",
       "action_taken": "resumed after intervention (10 ops)"
     }
   ],
   "escalation": {
-    "reason": "hard failure at step 0: not observed on final state",
-    "requested_at": "2026-09-18T16:29:58+00:00",
+    "reason": "hard failure at step 3: not observed within timeout",
+    "requested_at": "2026-09-18T18:38:50+00:00",
     "operator_actions": [
       "look",
-      "  -> url=http://127.0.0.1:8791/member/1002",
-      "goto http://127.0.0.1:8791/",
-      "goto http://127.0.0.1:8791/search",
+      "  -> url=http://127.0.0.1:8792/lookup?member=1002",
+      "goto http://127.0.0.1:8792/",
+      "goto http://127.0.0.1:8792/search",
       "fill textbox 'Member ID' 1002",
       "click button 'Search'",
       "look",
-      "  -> url=http://127.0.0.1:8791/member/1002",
+      "  -> url=http://127.0.0.1:8792/member/1002",
       "resume",
-      "control-transitions: [{'from': 'AUTOMATION', 'to': 'HUMAN', 'why': 'hard failure at step 0: not observed on final state', 'at': '2026-09-18T16:29:58+00:00'}, {'from': 'HUMAN', 'to': 'AUTOMATION', 'why': 'operator resumed', 'at': '2026-09-18T16:29:58+00:00'}]"
+      "control-transitions: [{'from': 'AUTOMATION', 'to': 'HUMAN', 'why': 'hard failure at step 3: not observed within timeout', 'at': '2026-09-18T18:38:50+00:00'}, {'from': 'HUMAN', 'to': 'AUTOMATION', 'why': 'operator resumed', 'at': '2026-09-18T18:38:50+00:00'}]"
     ],
     "resumed": true,
     "intervention_file": "evidence/replay-escalation-handoff/intervention.json"
   },
-  "steps_executed": 6,
-  "duration_ms": 1697
+  "steps_executed": 2,
+  "duration_ms": 3986
 }

@@ -116,10 +116,16 @@ def _session_expired() -> bool:
         return False
     with _lock:
         _page_loads += 1
-        if _page_loads > int(ttl) and not _expired_fired:
-            _expired_fired = True
-            _page_loads = 0  # "re-login required" — the next / visit clears it
-            return True
+        n = _page_loads
+        fired = _expired_fired
+    # Outside the lock: expiry fires for loads strictly AFTER the TTL-th load,
+    # and only once per arming (root re-arms).
+    if n > int(ttl) and not fired:
+        with _lock:
+            if not _expired_fired:
+                _expired_fired = True
+                _page_loads = 0  # "re-login required" — the next / visit clears it
+                return True
     return False
 
 

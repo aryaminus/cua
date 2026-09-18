@@ -6,7 +6,7 @@
       "index": 0,
       "role": "textbox",
       "name": "Member ID",
-      "value": "1001",
+      "value": "",
       "tag": "input"
     },
     {
@@ -18,11 +18,10 @@
     }
   ],
   "decision": {
-    "thought": "The member ID is filled in. Now I'll click Search to look up the member.",
-    "action": "click",
-    "index": 1,
-    "value": "",
-    "reason": "Submit the search to find member 1001."
+    "thought": "start at the member lookup page",
+    "action": "goto",
+    "value": "http://127.0.0.1:8791/search",
+    "reason": "entry point for member lookup"
   },
-  "at": "2026-09-18T18:05:51+00:00"
+  "at": "2026-09-18T18:38:38+00:00"
 }

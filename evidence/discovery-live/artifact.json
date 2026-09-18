@@ -47,7 +47,7 @@
         "text_contains": null,
         "element_present": null
       },
-      "rationale": "Member Lookup is the entry point for looking up a member's account."
+      "rationale": "Member Lookup is the entry point for member search."
     },
     {
       "id": 2,
@@ -65,7 +65,7 @@
       },
       "value": "{member_id}",
       "wait": null,
-      "rationale": "Enter the member ID into the search field."
+      "rationale": "Enter the member ID to look up."
     },
     {
       "id": 3,
@@ -87,7 +87,7 @@
         "text_contains": null,
         "element_present": null
       },
-      "rationale": "Submit the member ID search."
+      "rationale": "Submit the search to find member 1001."
     }
   ],
   "checkpoint": {
@@ -122,11 +122,11 @@
     }
   ],
   "provenance": {
-    "run_id": "discovery-live",
-    "recorded_at": "2026-09-18T17:22:29Z",
+    "run_id": "discovery-live-2",
+    "recorded_at": "2026-09-18T18:05:53Z",
     "model": "deepseek/deepseek-v4.1-flash",
     "decisions_model": "typesafe/jev-1.13",
     "steps_llm_calls": 4,
-    "cost_usd": 0.001374
+    "cost_usd": 0.000821
   }
 }

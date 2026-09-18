@@ -1,5 +1,5 @@
 {
-  "artifact": "lookup_up_member_and",
+  "artifact": "member_savings_balance",
   "params_redacted": {
     "member_id": "1003"
   },
@@ -10,11 +10,11 @@
     "step_id": 0,
     "action": "-",
     "expected": "checkpoint: page shows 'Member Detail'",
-    "observed": "not observed on final state",
+    "observed": "final state: Meridian FCU \u00a0|\u00a0 MemberServ Console 4.2 |  | System Error | Unhandled exception CMX-2201 while loading member record. The error has been logged. |  | Meridian Federal Credit Union - internal use only.",
     "screenshot": "evidence/replay-hard-failure-server-error/steps/000-failure.png"
   },
   "recoveries": [],
   "escalation": null,
   "steps_executed": 3,
-  "duration_ms": 753
+  "duration_ms": 794
 }

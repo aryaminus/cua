@@ -2,7 +2,7 @@
   "phase": "act",
   "action": "click",
   "index": 1,
-  "value": "",
+  "value": null,
   "post_url": "http://127.0.0.1:8791/member/1001",
-  "at": "2026-09-18T18:05:51+00:00"
+  "at": "2026-09-18T18:38:38+00:00"
 }
