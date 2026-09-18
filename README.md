@@ -149,6 +149,16 @@ See [`.env.example`](.env.example): `OPENROUTER_API_KEY` (discovery only),
 | Operator UI | deliberately bare: a command protocol (file/script/terminal) — the mechanism, not the chrome, is the point |
 | Multi-tenant / desktop surfaces | design only (DESIGN.md §4) — not built |
 
+## Site
+
+`site/` is a self-contained static project page. `netlify.toml` at the root
+configures a zero-build deploy (`publish = "site"`); the
+`deploy-site.yml` workflow redeploys it on every push to `main` that touches
+the page. One-time setup: create a Netlify token
+(app.netlify.com → User settings → Applications) and
+`gh secret set NETLIFY_AUTH_TOKEN` — the site is created automatically on
+first deploy.
+
 ## License
 
 MIT.

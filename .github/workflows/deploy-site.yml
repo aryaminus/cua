@@ -1,0 +1,56 @@
+name: Deploy site
+
+# Deploys site/ to Netlify on every push to main that touches the page.
+# Setup (one secret, one time):
+#   1. npm i -g netlify-cli && netlify login   # browser, once
+#   2. Token from https://app.netlify.com/user/applications (new token)
+#   3. gh secret set NETLIFY_AUTH_TOKEN
+# The site (named cua-aryaminus) is created automatically on first deploy;
+# every later push to main redeploys. Netlify is never needed locally.
+
+on:
+  push:
+    branches: [main]
+    paths: ['site/**', 'netlify.toml', '.github/workflows/deploy-site.yml']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Netlify token
+        id: tok
+        run: |
+          if [ -z "${NETLIFY_AUTH_TOKEN:-}" ]; then
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+            echo "::notice::NETLIFY_AUTH_TOKEN secret not set — site deploy skipped. See .github/workflows/deploy-site.yml header for one-time setup."
+          else
+            echo "skip=0" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      - name: Ensure site exists (create once by fixed name)
+        if: steps.tok.outputs.skip == '0'
+        run: |
+          set -eu
+          SITE_NAME=cua-aryaminus
+          ID=$(curl -sf -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            "https://api.netlify.com/api/v1/sites?name=$SITE_NAME" | jq -r '.[0].id // empty')
+          if [ -z "$ID" ]; then
+            ID=$(curl -sf -X POST -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+              -H 'Content-Type: application/json' \
+              -d "{\"name\":\"$SITE_NAME\"}" \
+              https://api.netlify.com/api/v1/sites | jq -r '.id')
+            echo "created site $SITE_NAME ($ID)"
+          else
+            echo "site $SITE_NAME already exists ($ID)"
+          fi
+          echo "SITE_ID=$ID" >> "$GITHUB_ENV"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      - name: Deploy
+        if: steps.tok.outputs.skip == '0'
+        run: npx --yes netlify-cli@17 deploy --dir=site --prod --site "$SITE_ID"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
