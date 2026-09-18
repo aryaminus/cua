@@ -39,6 +39,7 @@ class Verdict:
 
 class Allowlist:
     def __init__(self, cfg: dict):
+        self.raw = dict(cfg)
         self.origins: list[str] = cfg.get("origins", [])
         self.routes: list[str] = cfg.get("routes", [])
         self.actions: set[str] = set(cfg.get("actions", []))

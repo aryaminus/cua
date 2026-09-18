@@ -65,6 +65,13 @@ class ReplayEngine:
         self.operator = operator
         self.recoveries: list[Recovery] = []
         self.steps_executed = 0
+        # Engine-known transient markers (TEXT, from config — see allowlist.json
+        # transient_markers): pages that mean "try the same view again", never
+        # model decisions and never artifact content.
+        raw_allow = getattr(allowlist, "raw", None)
+        self._transient_markers: list[str] = list(
+            (raw_allow or {}).get("transient_markers", [])
+        )
 
     # ------------------------------------------------------------------ public
 
@@ -238,12 +245,22 @@ class ReplayEngine:
             self.surface.dialogs_seen.clear()
         if step.wait is not None:
             deadline = time.monotonic() + WAIT_TIMEOUT_S
+            busy_seen = False
             while time.monotonic() < deadline:
                 snap = self.surface.snapshot()
                 if self._check(step.wait, snap, params):
                     return
                 if self._check_outcomes(snap, params):
                     return  # a business outcome satisfies any post-condition
+                if not busy_seen and self._transient_markers and any(
+                    m.lower() in snap.text.lower() for m in self._transient_markers
+                ):
+                    # One known-transient reload per step, then continue waiting
+                    # on the refreshed state — the bounded recoverable path.
+                    busy_seen = True
+                    self.surface.reload()
+                    self._record_recovery(step, "transient_reload", "page reloaded once")
+                    continue
                 time.sleep(POLL_S)
             raise self._hard(
                 step,
@@ -258,11 +275,26 @@ class ReplayEngine:
             )
 
     def _settle(self) -> Snapshot:
-        """Bounded settle: first snapshot whose URL repeats within the budget."""
+        """Bounded settle: first snapshot whose URL repeats within the budget.
+
+        A known-transient page seen mid-settle is reloaded once (recorded as a
+        recovery) rather than accepted as the settled state — a busy page is
+        not a state, it is a request to look again.
+        """
         deadline = time.monotonic() + WAIT_TIMEOUT_S
         last_url = None
+        busy_seen = False
         snap = self.surface.snapshot()
         while time.monotonic() < deadline and snap.url != last_url:
+            if not busy_seen and self._transient_markers and any(
+                m.lower() in snap.text.lower() for m in self._transient_markers
+            ):
+                busy_seen = True
+                self.surface.reload()
+                step = self.art.steps[min(self.steps_executed, len(self.art.steps) - 1)]
+                self._record_recovery(step, "transient_reload", "page reloaded once")
+                snap = self.surface.snapshot()
+                continue
             last_url = snap.url
             time.sleep(POLL_S)
             snap = self.surface.snapshot()

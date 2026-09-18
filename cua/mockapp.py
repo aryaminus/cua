@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import threading
+import time
 
 from flask import Flask, redirect, request
 
@@ -81,6 +82,7 @@ MEMBERS: dict[str, dict[str, str]] = {
 
 _page_loads = 0
 _expired_fired = False
+_busy_fired = False
 _lock = threading.Lock()
 
 app = Flask(__name__)
@@ -101,10 +103,14 @@ def _reset_session() -> None:
 
 def reset_state() -> None:
     """Reset counters — used by tests and between demo phases (determinism)."""
-    global _page_loads, _expired_fired
+    global _page_loads, _expired_fired, _busy_fired
     with _lock:
         _page_loads = 0
         _expired_fired = False
+        _busy_fired = False
+        for m in MEMBERS.values():
+            if m["id"] != "1005":
+                m["status"] = "ACTIVE"
 
 
 def _session_expired() -> bool:
@@ -126,6 +132,23 @@ def _session_expired() -> bool:
                 _expired_fired = True
                 _page_loads = 0  # "re-login required" — the next / visit clears it
                 return True
+    return False
+
+
+def _transient_busy(mid: str) -> bool:
+    """Deterministic one-shot transient: with MOCKAPP_BUSY_MEMBER=<id> armed,
+    the first request for that member renders the 'System Busy' page; the
+    refresh (or replay reload) immediately succeeds — exactly the
+    JayomOza-style known recoverable condition, and the engine's reload policy
+    is what absorbs it."""
+    global _busy_fired
+    target = os.environ.get("MOCKAPP_BUSY_MEMBER", "")
+    if not target or mid not in {x.strip() for x in target.split(",") if x.strip()}:
+        return False
+    with _lock:
+        if not _busy_fired:
+            _busy_fired = True
+            return True
     return False
 
 
@@ -224,6 +247,22 @@ EXPIRED_BODY = """
 Please <a href="/">log in again</a> to continue.</td></tr></table>
 """
 
+RESTRICTED_BODY = """
+<h3>Member Detail — Restricted</h3>
+<table border="1" cellpadding="6" bgcolor="#f7eddf"><tr><td>
+<b>Access denied:</b> record for member {id} is frozen. Teller role cannot
+view frozen accounts. Contact a supervisor.
+</td></tr></table>
+"""
+
+BUSY_BODY = """
+<h3>System Busy</h3>
+<table border="1" cellpadding="6" bgcolor="#f7eddf"><tr><td>
+The operator console is busy processing another request. Please wait a moment
+and refresh the page.
+</td></tr></table>
+"""
+
 
 # ------------------------------------------------------------------ routes --
 
@@ -286,6 +325,13 @@ def member(mid: str):
             f"No member found for ID {mid}. Check the number and try again."
             "</td></tr></table>" + SEARCH_BODY,
         ), 200
+    if m["status"] == "FROZEN":
+        return _page("Restricted Record", RESTRICTED_BODY.format(id=mid)), 200
+    if _transient_busy(mid):
+        return _page("System Busy", BUSY_BODY), 200
+    slow = os.environ.get("MOCKAPP_SLOW_MEMBER", "")
+    if slow and mid in {x.strip() for x in slow.split(",") if x.strip()}:
+        time.sleep(float(os.environ.get("MOCKAPP_SLOW_SECONDS", "2.5")))
     return _page(f"Member {mid}", MEMBER_BODY.format(**m))
 
 

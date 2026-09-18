@@ -5,7 +5,7 @@ import pytest
 from cua.evidence import RunLog
 from cua.replay import ReplayEngine
 from cua.safety import Allowlist
-from cua.schema import Artifact, Check, Locator, Param, Step
+from cua.schema import Artifact, Check, Locator, Outcome, Param, Step
 
 from .conftest import CFG, OUTCOMES
 from .fakepage import FakePage
@@ -73,6 +73,26 @@ def test_business_outcome_not_found_is_not_a_failure(tmp_path):
 def test_business_outcome_invalid_input(tmp_path):
     r = engine(tmp_path, FakePage(), lookup_artifact(tmp_path)).run({"member_id": "40a"})
     assert r.status == "BUSINESS_OUTCOME" and r.outcome_id == "INVALID_INPUT"
+
+
+def test_business_outcome_permission_denied_on_frozen_member(tmp_path):
+    art = lookup_artifact(tmp_path)
+    art.outcomes = art.outcomes + [Outcome(
+        id="PERMISSION_DENIED", detect=Check(text_contains="Access denied"),
+        returns={"message": "Access denied for member ID {member_id}: frozen record"},
+    )]
+    r = engine(tmp_path, FakePage(), art).run({"member_id": "1005"})
+    assert r.status == "BUSINESS_OUTCOME" and r.outcome_id == "PERMISSION_DENIED"
+    assert r.outputs["message"] == "Access denied for member ID 1005: frozen record"
+
+
+def test_transient_busy_reloaded_once_and_succeeds(tmp_path):
+    r = engine(tmp_path, FakePage(busy_once=True), lookup_artifact(tmp_path)).run(
+        {"member_id": "1002"}
+    )
+    assert r.status == "SUCCESS"
+    assert r.outputs["savings_balance"] == "19,340.00"
+    assert any(rec.condition == "transient_reload" for rec in r.recoveries)
 
 
 def test_hard_failure_on_server_error_has_debug_detail(tmp_path):

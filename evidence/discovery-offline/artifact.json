@@ -105,11 +105,23 @@
       "returns": {
         "message": "Invalid member ID supplied ({member_id})"
       }
+    },
+    {
+      "id": "PERMISSION_DENIED",
+      "description": "The member record exists but the teller role may not view it (frozen).",
+      "detect": {
+        "url_contains": null,
+        "text_contains": "Access denied",
+        "element_present": null
+      },
+      "returns": {
+        "message": "Access denied for member ID {member_id}: frozen record"
+      }
     }
   ],
   "provenance": {
     "run_id": "discovery-offline",
-    "recorded_at": "2026-09-18T18:38:38Z",
+    "recorded_at": "2026-09-18T19:48:40Z",
     "model": "fake-llm",
     "decisions_model": null,
     "steps_llm_calls": 4,

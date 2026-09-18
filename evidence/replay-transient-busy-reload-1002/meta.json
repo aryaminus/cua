@@ -1,0 +1,14 @@
+{
+  "mode": "replay-matrix",
+  "case": "transient-busy-reload-1002",
+  "params": {
+    "member_id": "1002"
+  },
+  "env": {
+    "MOCKAPP_BUSY_MEMBER": "1002"
+  },
+  "started_at": "2026-09-18T19:48:50+00:00",
+  "status": "SUCCESS",
+  "steps_executed": 3,
+  "finished_at": "2026-09-18T19:48:52+00:00"
+}

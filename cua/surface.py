@@ -146,6 +146,7 @@ class PageSurface(Protocol):
     """What replay/agent/escalation need from a live session."""
 
     def goto(self, url: str) -> None: ...
+    def reload(self) -> None: ...  # re-request the current view (transient recovery)
     def snapshot(self) -> Snapshot: ...
     def click(self, el: Element) -> None: ...
     def fill(self, el: Element, value: str) -> None: ...
@@ -182,13 +183,26 @@ class PlaywrightSurface:
     def goto(self, url: str) -> None:
         self._page.goto(url, wait_until="domcontentloaded")
 
+    def reload(self) -> None:
+        self._page.reload(wait_until="domcontentloaded")
+
     def snapshot(self) -> Snapshot:
-        elements = [Element(**e) for e in self._page.evaluate(_SNAPSHOT_JS)]
-        return Snapshot(
-            url=self._page.url,
-            text=self._page.evaluate("() => document.body.innerText"),
-            elements=elements,
-        )
+        from playwright.sync_api import Error as PlaywrightError
+
+        # A navigation racing the read destroys the execution context; retry
+        # a few times instead of failing the observation.
+        last: Exception | None = None
+        for _ in range(6):
+            try:
+                elements = [Element(**e) for e in self._page.evaluate(_SNAPSHOT_JS)]
+                text = self._page.evaluate("() => document.body.innerText")
+                return Snapshot(url=self._page.url, text=text, elements=elements)
+            except PlaywrightError as exc:
+                last = exc
+                import time as _time
+
+                _time.sleep(0.1)
+        raise last  # type: ignore[misc]
 
     def _nth(self, el: Element):
         return self._page.locator(SELECTOR).nth(el.index)

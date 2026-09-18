@@ -7,6 +7,7 @@ CFG = {
     "routes": ["/", "/search", "/lookup", "/member/*"],
     "actions": ["goto", "click", "fill", "press_enter", "read"],
     "risky_policy": "block",
+    "transient_markers": ["System Busy", "please wait a moment"],
     "forbidden_elements": [
         {"role": "button", "name_contains": "freeze",
          "class": "irreversible: freezes all member accounts"}

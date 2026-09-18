@@ -52,6 +52,9 @@ MEMBERS = {
     "1003": ("TRAN, HANH T", "590-33-1206", "612.45"),
 }
 
+# Frozen records are not viewable by the teller role (mirrors the Flask app).
+FROZEN = {"1005"}
+
 EXPIRED_TEXT = (
     "Meridian FCU | MemberServ Console 4.2\nSession Expired\nYour session has expired due to "
     "inactivity.\nPlease log in again to continue."
@@ -61,11 +64,27 @@ ERROR_TEXT = (
     "while loading member record. The error has been logged."
 )
 
+BUSY_TEXT = (
+    "Meridian FCU | MemberServ Console 4.2\nSystem Busy\nThe operator console is busy "
+    "processing another request. Please wait a moment and refresh the page."
+)
+
+RESTRICTED_TEXT = (
+    "Meridian FCU | MemberServ Console 4.2\nMember Detail \u2014 Restricted\n"
+    "Access denied: record for member {mid} is frozen. Teller role cannot view frozen "
+    "accounts. Contact a supervisor."
+)
+
 
 class FakePage:
-    def __init__(self, *, fault: str | None = None, session_ttl: int | None = None):
+    def __init__(self, *, fault: str | None = None, session_ttl: int | None = None,
+                 busy_once: bool = False, slow: bool = False):
         self.fault = fault
         self.session_ttl = session_ttl
+        self.busy_once = busy_once
+        self.slow = slow
+        self._busy_served = False
+        self._busy_mid = "1002"
         self._loads = 0
         self._expired_fired = False
         self._expired_page = False  # browser frozen on expired screen until navigation
@@ -88,6 +107,16 @@ class FakePage:
             self._loads = 0  # re-login
         else:
             self._loads += 1  # a navigation is a page load (mirrors the Flask app)
+
+    def reload(self) -> None:
+        # A reload consumes the one-shot busy page: if the current URL would
+        # render BUSY, the refresh instead reveals the real page underneath —
+        # mirroring the Flask app's one-shot transient.
+        if self._busy_served is True and self.url.replace(APP, "").startswith("/member/"):
+            self._busy_served = "consumed"
+
+    def _busy_armed_view(self, mid: str) -> bool:
+        return False  # subsumed by _busy_once_armed at click time; kept for symmetry
 
     def screenshot(self, path: str) -> bool:
         from pathlib import Path
@@ -120,6 +149,16 @@ class FakePage:
             mid = path.rsplit("/", 1)[-1]
             if self.fault == f"server_error_member_{mid}":
                 return Snapshot(url=self.url, text=ERROR_TEXT, elements=[])
+            if self.busy_once and mid == self._busy_mid and self._busy_served is True:
+                # the click already advanced the URL while marking the view
+                # busy: render the transient page until reload() consumes it
+                return Snapshot(url=self.url, text=BUSY_TEXT, elements=[])
+            if mid == "1005":
+                return Snapshot(
+                    url=self.url,
+                    text=RESTRICTED_TEXT.format(mid=mid),
+                    elements=self._search_elements(),
+                )
             if mid in MEMBERS:
                 name, ssn, sav = MEMBERS[mid]
                 return Snapshot(
@@ -133,6 +172,9 @@ class FakePage:
             )
         return Snapshot(url=self.url, text="not found", elements=[])
 
+    def _busy_once_armed(self, q: str) -> bool:
+        return bool(self.busy_once and q == self._busy_mid and self._busy_served is False)
+
     def click(self, el: Element) -> None:
         self.click_log.append((el.role, el.name))
         if el.role == "clicktext":
@@ -140,11 +182,19 @@ class FakePage:
                       "Administration": "/admin"}.get(el.name)
             if target:
                 self.goto(APP + target)
-        elif el.name == "Search":
+            return
+        if el.name == "Search":
             # navigation resolves at click time — snapshots stay read-only,
             # like a real browser (polling never re-requests)
             q = self._filled.get(1, "")
             self._loads += 1  # GET /lookup
+            if self._busy_once_armed(q):
+                # one-shot transient: the lookup resolves, but the member view
+                # first renders the busy page (URL already advanced)
+                self._busy_served = True
+                self._loads += 1
+                self.url = f"{APP}/member/{q}"
+                return
             if self.session_ttl is not None and self._loads > self.session_ttl \
                     and not self._expired_fired:
                 self._expired_fired = True
@@ -153,9 +203,10 @@ class FakePage:
                 return
             self._loads += 1  # redirect GET /member/{q}
             self.url = (
-                f"{APP}/member/{q}" if (q.isdigit() and q in MEMBERS)
+                f"{APP}/member/{q}" if ((q.isdigit() and q in MEMBERS) or q in FROZEN)
                 else f"{APP}/lookup?member={q}"
             )
+            return
         elif "Freeze" in el.name:
             self._dialogs.append("confirm: Freeze all accounts for member 1001?")
 

@@ -65,6 +65,12 @@ LOOKUP_OUTCOMES = [
         detect={"text_contains": "Member ID must be numeric"},
         returns={"message": "Invalid member ID supplied ({member_id})"},
     ),
+    Outcome(
+        id="PERMISSION_DENIED",
+        description="The member record exists but the teller role may not view it (frozen).",
+        detect={"text_contains": "Access denied"},
+        returns={"message": "Access denied for member ID {member_id}: frozen record"},
+    ),
 ]
 
 
@@ -253,6 +259,11 @@ def cmd_demo(args) -> None:
             ("success-1002-parametrized", {"member_id": "1002"}, {}, "SUCCESS"),
             ("business-not-found-9999", {"member_id": "9999"}, {}, "BUSINESS_OUTCOME"),
             ("business-invalid-input", {"member_id": "401a"}, {}, "BUSINESS_OUTCOME"),
+            ("business-permission-denied-1005", {"member_id": "1005"}, {}, "BUSINESS_OUTCOME"),
+            ("slow-response-absorbed-1006", {"member_id": "1006"},
+             {"MOCKAPP_SLOW_MEMBER": "1006", "MOCKAPP_SLOW_SECONDS": "2.5"}, "SUCCESS"),
+            ("transient-busy-reload-1002", {"member_id": "1002"},
+             {"MOCKAPP_BUSY_MEMBER": "1002"}, "SUCCESS"),
             ("hard-failure-server-error", {"member_id": "1003"},
              {"MOCKAPP_FAULT": "server_error_member_1003"}, "HARD_FAILURE"),
         ]

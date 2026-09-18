@@ -97,12 +97,17 @@ The result contract is a closed enum (`ReplayResult`):
 
 - **SUCCESS** — checkpoint passed; declared outputs extracted and returned.
 - **BUSINESS_OUTCOME** — a declared outcome matched at any step
-  (`NOT_FOUND`, `INVALID_INPUT` in our artifact). Returns the outcome's
-  parameterized payload. "No such member" is an answer, not a crash.
+  (`NOT_FOUND`, `INVALID_INPUT`, `PERMISSION_DENIED` in our artifact; the
+  last covers the frozen-record member a teller role may not view). Returns
+  the outcome's parameterized payload. "No such member" is an answer, not a
+  crash.
 - **Recoverable conditions are engine policy, recorded never silent:** JS
   `confirm()` dialogs auto-dismissed and logged (`unexpected_dialog`);
-  locator re-snapshot rematch; waits allowed their full budget. Each appears
-  in `result.recoveries`.
+  locator re-snapshot rematch; waits allowed their full budget (a deliberately
+  slow member response is absorbed here, inside the timeout, not around it).
+  A known-transient "System Busy" page is reloaded exactly once per step
+  (`transient_reload`); a second consecutive busy page is treated as a real
+  failure, not an infinite wait. Each appears in `result.recoveries`.
 - **HARD_FAILURE** — anything else: app 5xx (fault-injected demo), session
   expiry, unresolvable locator, failed post-condition, failed checkpoint.
   Failures carry step id, action, expected vs observed (observed includes a

@@ -1,0 +1,12 @@
+{
+  "mode": "replay-matrix",
+  "case": "business-permission-denied-1005",
+  "params": {
+    "member_id": "1005"
+  },
+  "env": {},
+  "started_at": "2026-09-18T19:48:45+00:00",
+  "status": "BUSINESS_OUTCOME",
+  "steps_executed": 3,
+  "finished_at": "2026-09-18T19:48:46+00:00"
+}

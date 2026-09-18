@@ -1,0 +1,22 @@
+{
+  "artifact": "member_savings_balance",
+  "params_redacted": {
+    "member_id": "1002"
+  },
+  "status": "SUCCESS",
+  "outputs": {
+    "savings_balance": "[REDACTED-AMT]"
+  },
+  "outcome_id": null,
+  "failure": null,
+  "recoveries": [
+    {
+      "step_id": 3,
+      "condition": "transient_reload",
+      "action_taken": "page reloaded once"
+    }
+  ],
+  "escalation": null,
+  "steps_executed": 3,
+  "duration_ms": 738
+}

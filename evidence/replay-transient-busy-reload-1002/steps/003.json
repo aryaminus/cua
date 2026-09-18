@@ -1,0 +1,18 @@
+{
+  "step_id": 3,
+  "action": "click",
+  "target": {
+    "role": "button",
+    "name": "Search",
+    "fallbacks": [
+      {
+        "kind": "tag_ordinal",
+        "tag": "input",
+        "ordinal": 0
+      }
+    ]
+  },
+  "value": null,
+  "post_url": "http://127.0.0.1:8793/member/1002",
+  "at": "2026-09-18T19:48:52+00:00"
+}

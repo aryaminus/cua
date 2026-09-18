@@ -15,7 +15,7 @@ from cua import mockapp
 from cua.evidence import RunLog
 from cua.replay import ReplayEngine
 from cua.safety import Allowlist
-from cua.schema import Artifact, Check, Locator, Param, Step
+from cua.schema import Artifact, Check, Locator, Outcome, Param, Step
 from cua.surface import PlaywrightSurface, resolve
 
 from .conftest import CFG, OUTCOMES  # allowlist cfg + outcome fixtures shared
@@ -101,7 +101,13 @@ def art(tmp_path) -> Artifact:
                  wait=Check(url_contains="/member/{member_id}")),
         ],
         checkpoint=Check(text_contains="Member Detail"),
-        outcomes=OUTCOMES,
+        outcomes=OUTCOMES + [
+            Outcome(
+                id="PERMISSION_DENIED",
+                detect=Check(text_contains="Access denied"),
+                returns={"message": "Access denied for member ID {member_id}"},
+            )
+        ],
         status="approved",
         provenance={"run_id": "t", "recorded_at": "2026", "model": "t"},
     )
@@ -141,3 +147,29 @@ def test_replay_parametrized_real_browser(tmp_path, surface):
     mockapp.reset_state()
     r = _engine(tmp_path, surface, art(tmp_path)).run({"member_id": "1002"})
     assert r.status == "SUCCESS" and r.outputs["savings_balance"] == "19,340.00"
+
+
+def test_replay_permission_denied_real_browser(tmp_path, surface):
+    mockapp.reset_state()
+    r = _engine(tmp_path, surface, art(tmp_path)).run({"member_id": "1005"})
+    assert r.status == "BUSINESS_OUTCOME" and r.outcome_id == "PERMISSION_DENIED"
+    assert "1005" in r.outputs["message"]
+
+
+def test_replay_transient_busy_reload_real_browser(tmp_path, surface, monkeypatch):
+    monkeypatch.setenv("MOCKAPP_BUSY_MEMBER", "1002")
+    mockapp.reset_state()
+    r = _engine(tmp_path, surface, art(tmp_path)).run({"member_id": "1002"})
+    monkeypatch.delenv("MOCKAPP_BUSY_MEMBER", raising=False)
+    assert r.status == "SUCCESS"
+    assert any(rec.condition == "transient_reload" for rec in r.recoveries)
+
+
+def test_replay_slow_response_absorbed_by_waits(tmp_path, surface, monkeypatch):
+    monkeypatch.setenv("MOCKAPP_SLOW_MEMBER", "1006")
+    monkeypatch.setenv("MOCKAPP_SLOW_SECONDS", "1.0")
+    mockapp.reset_state()
+    r = _engine(tmp_path, surface, art(tmp_path)).run({"member_id": "1006"})
+    monkeypatch.delenv("MOCKAPP_SLOW_MEMBER", raising=False)
+    monkeypatch.delenv("MOCKAPP_SLOW_SECONDS", raising=False)
+    assert r.status == "SUCCESS"

@@ -1,0 +1,16 @@
+{
+  "artifact": "member_savings_balance",
+  "params_redacted": {
+    "member_id": "1005"
+  },
+  "status": "BUSINESS_OUTCOME",
+  "outputs": {
+    "message": "Access denied for member ID 1005: frozen record"
+  },
+  "outcome_id": "PERMISSION_DENIED",
+  "failure": null,
+  "recoveries": [],
+  "escalation": null,
+  "steps_executed": 3,
+  "duration_ms": 601
+}

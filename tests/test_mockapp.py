@@ -59,6 +59,38 @@ def test_session_expiry_oneshot_and_relogin(monkeypatch):
     assert "Session Expired" not in c.get("/search").get_data(as_text=True)
 
 
+def test_frozen_member_renders_restricted_page_not_detail():
+    c = client()
+    r = c.get("/member/1005")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "Access denied" in body and "frozen" in body
+    assert "Accounts" not in body  # no balances leak on the restricted page
+
+
+def test_slow_member_responds_within_wait_budget(monkeypatch):
+    import time
+
+    monkeypatch.setenv("MOCKAPP_SLOW_MEMBER", "1006")
+    monkeypatch.setenv("MOCKAPP_SLOW_SECONDS", "0.2")
+    c = client()
+    t0 = time.monotonic()
+    r = c.get("/member/1006")
+    dt = time.monotonic() - t0
+    assert r.status_code == 200
+    assert 0.15 < dt < 3.0  # delayed but inside the replay wait budget
+    assert "LINDQVIST" in r.get_data(as_text=True)
+
+
+def test_transient_busy_fires_once_then_recovers(monkeypatch):
+    monkeypatch.setenv("MOCKAPP_BUSY_MEMBER", "1002")
+    c = client()
+    first = c.get("/member/1002").get_data(as_text=True)
+    assert "System Busy" in first
+    second = c.get("/member/1002").get_data(as_text=True)
+    assert "OKAFOR" in second  # the refresh succeeds
+
+
 def test_freeze_is_irreversible_and_confirms(monkeypatch):
     monkeypatch.delenv("MOCKAPP_NO_DIALOG", raising=False)
     c = client()

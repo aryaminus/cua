@@ -1,0 +1,15 @@
+{
+  "mode": "replay-matrix",
+  "case": "slow-response-absorbed-1006",
+  "params": {
+    "member_id": "1006"
+  },
+  "env": {
+    "MOCKAPP_SLOW_MEMBER": "1006",
+    "MOCKAPP_SLOW_SECONDS": "2.5"
+  },
+  "started_at": "2026-09-18T19:48:47+00:00",
+  "status": "SUCCESS",
+  "steps_executed": 3,
+  "finished_at": "2026-09-18T19:48:50+00:00"
+}
