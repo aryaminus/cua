@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "capability_name": "member_savings_lookup",
+  "capability_name": "member_balance_capability",
   "description": "Discovered from goal: Look up member {member_id} and report their current savings balance",
   "app": "meridian-fcu/memberserv (mock)",
   "entry_url": "http://127.0.0.1:8791/",
@@ -47,7 +47,7 @@
         "text_contains": null,
         "element_present": null
       },
-      "rationale": "Member Lookup is the entry point for member search."
+      "rationale": "Navigate from the console home to the member search form."
     },
     {
       "id": 2,
@@ -65,7 +65,7 @@
       },
       "value": "{member_id}",
       "wait": null,
-      "rationale": "Enter the member ID to look up."
+      "rationale": "Enter the {member_id} parameter into the search field."
     },
     {
       "id": 3,
@@ -87,7 +87,7 @@
         "text_contains": null,
         "element_present": null
       },
-      "rationale": "Submit the search to find member 1001."
+      "rationale": "Submit the lookup and land on the member detail view."
     }
   ],
   "checkpoint": {
@@ -98,7 +98,7 @@
   "outcomes": [
     {
       "id": "NOT_FOUND",
-      "description": "No member exists for the requested ID — a legitimate answer, not a failure.",
+      "description": "No member exists for the requested ID \u2014 a legitimate answer, not a failure.",
       "detect": {
         "url_contains": null,
         "text_contains": "No member found",

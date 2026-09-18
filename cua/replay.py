@@ -83,7 +83,10 @@ class ReplayEngine:
             failure = Failure(step_id=0, action="goto", expected="entry URL allowed",
                               observed=v.reason)
             self.elog.line(f"HARD FAILURE entry: {v.reason}")
-            return self._result("HARD_FAILURE", params, started, failure=failure)
+            result = self._result("HARD_FAILURE", params, started, failure=failure)
+            self.elog.result(result.model_dump())
+            self.elog.finish(status=result.status, steps_executed=self.steps_executed)
+            return result
         self.surface.goto(self.art.entry_url)  # every replay starts at the declared entry
         try:
             result = self._execute_steps(self.art.steps, params, started)

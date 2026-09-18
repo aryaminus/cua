@@ -173,7 +173,6 @@ def test_escalation_handoff_resumes_and_succeeds(tmp_path):
     assert r.outputs["savings_balance"] == "19,340.00"
     assert any(rec.condition == "operator_handoff" for rec in r.recoveries)
 
-
 def test_escalation_aborted_by_operator(tmp_path):
     from cua.escalation import ScriptedOperator
 
@@ -182,6 +181,18 @@ def test_escalation_aborted_by_operator(tmp_path):
                operator=ScriptedOperator(["abort"])).run({"member_id": "1002"})
     assert r.status == "ESCALATED"
     assert r.escalation is not None and not r.escalation.resumed
+
+
+def test_operator_commands_are_allowlisted(tmp_path):
+    from cua.escalation import _run_operator_command
+
+    page = FakePage()
+    with __import__("pytest").raises(ValueError, match="allowlist"):
+        _run_operator_command(page, "goto http://evil.example/phish")
+    with __import__("pytest").raises(ValueError, match="allowlist"):
+        _run_operator_command(page, "click button 'Freeze Accounts'")
+    # the same freeze the discovery model attempted live stays refused here too
+    assert page.click_log == []
 
 
 def test_determinism_two_runs_identical_signatures(tmp_path):

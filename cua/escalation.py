@@ -68,6 +68,7 @@ class ScriptedOperator:
         self.commands = commands
 
     def handle(self, surface: PageSurface, request: dict) -> EscalationRecord:
+        session_origin = _session_origin(surface)
         actions: list[str] = []
         resumed = False
         for cmd in self.commands:
@@ -81,7 +82,7 @@ class ScriptedOperator:
                 break
             if cmd.strip() == "abort":
                 break
-            _run_operator_command(surface, cmd)
+            _run_operator_command(surface, cmd, session_origin=session_origin)
         return EscalationRecord(
             reason=request["reason"],
             requested_at=_now(),
@@ -97,6 +98,7 @@ class TerminalOperator:
     def handle(self, surface: PageSurface, request: dict) -> EscalationRecord:
         print(json.dumps(request, indent=2))
         print("operator> type commands (goto/click/fill/look/resume/abort):")
+        session_origin = _session_origin(surface)
         actions: list[str] = []
         resumed = False
         while True:
@@ -117,7 +119,7 @@ class TerminalOperator:
                 actions.append(f"  -> url={snap.url}")
                 continue
             try:
-                _run_operator_command(surface, cmd)
+                _run_operator_command(surface, cmd, session_origin=session_origin)
             except Exception as exc:  # operator errors are recorded, not fatal
                 actions.append(f"  ! error: {exc}")
         return EscalationRecord(
@@ -129,20 +131,54 @@ class TerminalOperator:
         )
 
 
-def _run_operator_command(surface: PageSurface, cmd: str) -> None:
+def _session_origin(surface: PageSurface) -> str | None:
+    """Origin of the session the operator currently holds — trusted for
+    navigation so fault-phase servers on demo-private ports keep working,
+    while every other origin still goes through the allowlist."""
+    from urllib.parse import urlsplit
+
+    try:
+        current = surface.snapshot().url
+        return f"{urlsplit(current).scheme}://{urlsplit(current).netloc}"
+    except Exception:
+        return None
+
+
+def _run_operator_command(
+    surface: PageSurface, cmd: str, *, session_origin: str | None = None
+) -> None:
     import shlex
 
+    from .safety import Allowlist
     from .schema import Locator
 
     parts = shlex.split(cmd)
+    if not parts:
+        raise ValueError("empty operator command")
     verb, args = parts[0], parts[1:]
     if verb == "goto":
+        if not args:
+            raise ValueError("syntax: goto <url>")
+        allow = Allowlist.load()
+        origins = list(allow.origins)
+        if session_origin and session_origin not in origins:
+            # The live session may run on a demo-private port (fault-phase
+            # servers): the session's own origin is trusted for navigation,
+            # everything else still goes through the allowlist.
+            origins = origins + [session_origin]
+            allow = Allowlist({**allow.raw, "origins": origins})
+        v = allow.check_url(args[0])
+        if not v.allowed:
+            raise ValueError(f"operator: navigation refused by allowlist: {v.reason}")
         surface.goto(args[0])
     elif verb in ("click", "fill"):
         if len(args) < 2 or (verb == "fill" and len(args) < 3):
             extra = " <value>" if verb == "fill" else ""
             raise ValueError(f"syntax: {verb} <role> '<name>'" + extra)
         role, name = args[0], args[1]
+        v = Allowlist.load().check_element(verb, role, name)
+        if not v.allowed:
+            raise ValueError(f"operator: action refused by allowlist: {v.reason}")
         el = resolve(Locator(role=role, name=name), surface.snapshot())
         if el is None:
             raise ValueError(f"operator: no {role} {name!r} on screen")

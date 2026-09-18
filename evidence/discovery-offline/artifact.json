@@ -121,7 +121,7 @@
   ],
   "provenance": {
     "run_id": "discovery-offline",
-    "recorded_at": "2026-09-18T19:48:40Z",
+    "recorded_at": "2026-09-18T20:20:01Z",
     "model": "fake-llm",
     "decisions_model": null,
     "steps_llm_calls": 4,

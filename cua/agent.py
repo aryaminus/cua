@@ -106,6 +106,7 @@ class DiscoveryAgent:
         model: str = "",
         decisions_model: str = "",
         max_steps: int = 12,
+        deadline_s: float = 600.0,
         operator=None,
     ):
         self.surface = surface
@@ -115,6 +116,7 @@ class DiscoveryAgent:
         self.model = model
         self.decisions_model = decisions_model
         self.max_steps = max_steps
+        self.deadline_s = deadline_s
         self.operator = operator
 
     # ------------------------------------------------------------------ public
@@ -138,6 +140,12 @@ class DiscoveryAgent:
         last_state_sig = None
 
         while n < self.max_steps:
+            if time.monotonic() - started > self.deadline_s:
+                self.elog.line(f"step {n}: deadline exceeded ({self.deadline_s}s)")
+                return DiscoveryOutcome(
+                    False, reason=f"timeout: deadline {self.deadline_s}s exceeded",
+                    trace=trace, llm_calls=llm_calls, stuck_signals=stuck_counter,
+                )
             n += 1
             snap = self.surface.snapshot()
             sig = (snap.url, hash(redact_text(snap.text)),

@@ -57,6 +57,22 @@ def test_discovery_compiles_parameterized_artifact(tmp_path):
     assert art.status == "draft"  # approval is a separate, deliberate step
 
 
+def test_discovery_deadline_stops_the_loop(tmp_path):
+    page = FakePage()
+    run = RunLog(tmp_path / "evidence", "disc-deadline")
+    run.meta(mode="discovery-test")
+    agent = DiscoveryAgent(page, FakeLLM(SCRIPT), Allowlist(CFG), run,
+                           model="fake-llm", max_steps=50, deadline_s=0.0)
+    from cua.schema import Param
+
+    spec = {"member_id": Param(name="member_id", type="string", example="1001")}
+    out = agent.run(
+        "Look up member {member_id} and report their savings balance",
+        "http://127.0.0.1:8791/search", spec, "disc-deadline",
+    )
+    assert not out.ok and "timeout" in out.reason
+
+
 def test_done_rejected_when_verify_text_missing(tmp_path):
     script = SCRIPT[:3] + [{**SCRIPT[3], "verify_text": "PAGE THAT DOES NOT EXIST"}]
     out = discover(tmp_path, script)

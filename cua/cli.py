@@ -133,7 +133,7 @@ def cmd_discover(args) -> None:
     try:
         agent = DiscoveryAgent(
             surface, llm, allow, run, model=model, decisions_model=jev,
-            max_steps=args.max_steps, operator=None,
+            max_steps=args.max_steps, deadline_s=args.deadline_s, operator=None,
         )
         out = agent.run(args.goal, args.entry or APP_URL, param_spec, args.run_id,
                         name=args.name)
@@ -431,6 +431,8 @@ def main(argv=None) -> None:
     s.add_argument("--param", action="append", default=[], metavar="name=example")
     s.add_argument("--entry", default=None, help="entry URL (default $CUA_APP_URL)")
     s.add_argument("--max-steps", type=int, default=12)
+    s.add_argument("--deadline-s", type=float, default=600.0,
+                   help="wall-clock timeout for the loop (§3.1 stopping condition)")
     s.add_argument("--run-id", default=None)
     s.add_argument("--allowlist", default=None)
     s.add_argument("--headed", action="store_true")
