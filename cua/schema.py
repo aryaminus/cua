@@ -264,6 +264,10 @@ class ReplayResult(BaseModel):
     escalation: EscalationRecord | None = None
     steps_executed: int = 0
     duration_ms: int = 0
+    budgets: dict = Field(
+        default_factory=dict,
+        description="runtime envelope self-description: budgets in effect and actuals",
+    )
 
     def summarize(self) -> str:
         parts = [f"{self.status}"]

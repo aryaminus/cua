@@ -185,7 +185,50 @@ is days old, RLCD benchmarks thin, launch-week data terms not
 enterprise-grade — all inputs here are synthetic fixtures, and
 `CUA_DATA_COLLECTION=deny` opts into zero-retention endpoints.
 
-## 7. Cuts
+## 7. Budgets, latency, cost
+
+Budgets are runtime posture, deliberately outside the artifact schema:
+`config/budgets.json` (typed, compiled defaults, `--budget group.key=value`
+overrides) is enforced — never advisory — and every replay result
+self-describes its envelope (`result.json` gains `budgets.{in_effect,
+actuals}`). Breaches are typed failures with `budget exceeded` reasons.
+
+**Network behavior** (OpenRouter's documented contract): 408/429/5xx and
+transport errors retried up to 3 attempts with backoff; `Retry-After`
+honored on 429/503 (capped at 30s); 4xx client errors (bad key, bad
+request, moderation) never retried. Timeouts split connect 10s / read 60s
+/ write 30s so a dead network fails in seconds, not minutes.
+
+**Measured baseline** (`cua bench`, `evidence/performance/bench.json`;
+5 runs/case; live probe 3 calls):
+
+| Case | p50 | p95 | Expectation |
+|---|---|---|---|
+| replay success | 796 ms | 875 ms | sub-second, local-CPU bound |
+| replay business outcome | 650 ms | 659 ms | fastest exit: 2 steps |
+| slow page absorbed (2.5 s fault) | 3.29 s | 3.34 s | ≈ fault delay + ε, wait budget absorbs it |
+| transient busy + reload | 748 ms | 818 ms | one reload ≈ +10% over baseline |
+| escalation cycle (scripted) | 4.66 s | — | dominated by operator actions, not engine |
+| server cold boot | 38 ms | — | trivial |
+| LLM call (live, JSON mode) | 2.03 s | — | 4 calls ≈ 8 s discovery; network RTT dominates |
+| discovery end-to-end (live) | 9.0 s | — | $0.0008, 4 LLM calls |
+| offline test suite | 21.7 s | — | 76 tests, no keys |
+
+**Enforced budgets and headroom:** replay per-step wait 3s (observed p95
+under 1s; slow-fault pages use ~2.6s of it — deliberate), act timeout 10s,
+whole-run 180s (≈45× observed max); discovery wall clock 600s, 40 steps,
+60 LLM calls, cost $0.50 (≈600× the $0.0008 observed run — a runaway loop
+stops at cents, not dollars). Cost is enforced pre-call: breach stops the
+loop cleanly with a `budget exceeded` reason (test-asserted, as are the
+retry ladder and every cap above).
+
+**Real-world expectations:** replay latency is local (browser + app)
+bound and scales with steps, not load; discovery latency is LLM-RTT bound
+(4 × ~2s today, model-swap invariant since calls stay single-digit);
+escalation latency is dominated by the human. Costs are bounded by config,
+not by hope.
+
+## 8. Cuts
 
 Not built, with the next step if we continued:
 

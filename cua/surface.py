@@ -183,12 +183,18 @@ class PageSurface(Protocol):
 class PlaywrightSurface:
     """Playwright-backed PageSurface. One instance == one live browser session."""
 
-    def __init__(self, url: str | None = None, headless: bool = True):
+    def __init__(
+        self, url: str | None = None, headless: bool = True, act_timeout_s: float | None = None
+    ):
         from playwright.sync_api import sync_playwright
 
         self._pw = sync_playwright().start()
         self._browser = self._pw.chromium.launch(headless=headless)
         self._page = self._browser.new_page()
+        # Per-action ceiling (config/budgets.json replay.act_timeout_s).
+        # Playwright's own default is 30s; an explicit budget makes the
+        # envelope visible and tight instead of implicit and loose.
+        self._page.set_default_timeout((act_timeout_s or 30.0) * 1000)
         self._dialogs: list[str] = []
         self._seq = 0
         self._page.on("dialog", self._on_dialog)

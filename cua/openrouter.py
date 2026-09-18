@@ -11,15 +11,21 @@ from __future__ import annotations
 
 import json
 import os
+import time
 
 import httpx
 
+from .budgets import LLMBudget
+
 BASE = "https://openrouter.ai/api"
-TIMEOUT_S = 90.0
 
 
 class OpenRouterError(RuntimeError):
     pass
+
+
+class _Retry(Exception):
+    """Internal: carry (status, text) of a retryable HTTP response upward."""
 
 
 def _loads_forgiving(content: str) -> dict:
@@ -35,16 +41,25 @@ def _loads_forgiving(content: str) -> dict:
 
 
 class OpenRouter:
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, budget: LLMBudget | None = None):
         self.key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
         if not self.key:
             raise OpenRouterError("OPENROUTER_API_KEY not set (see .env.example)")
+        self.budget = budget or LLMBudget()
+        t = self.budget
         self._client = httpx.Client(
             base_url=BASE,
             headers={"Authorization": f"Bearer {self.key}"},
-            timeout=TIMEOUT_S,
+            timeout=httpx.Timeout(
+                t.read_timeout_s,
+                connect=t.connect_timeout_s,
+                write=t.write_timeout_s,
+                pool=t.pool_timeout_s,
+            ),
         )
         self.spent_usd = 0.0
+        self.latencies_s: list[float] = []  # per chat call, after retries
+        self.retries: int = 0  # transport/5xx/429 retries actually performed
         # Optional privacy posture (see REPORT.md §Safety): when
         # CUA_DATA_COLLECTION=deny, OpenRouter routes only to providers that do
         # not retain prompts. Off by default — it can exclude cheaper providers.
@@ -55,6 +70,45 @@ class OpenRouter:
         if self._provider:
             body["provider"] = self._provider
         return body
+
+    def _post(self, path: str, body: dict) -> dict:
+        """POST with the bounded network ladder: retry transport errors and
+        wait-and-retry statuses (429/503 honor Retry-After, per OpenRouter
+        docs), raise immediately on client errors (4xx) and after
+        max_attempts on anything else. Never silent, never unbounded."""
+        b = self.budget
+        last = ""
+        for attempt in range(b.max_attempts):
+            t0 = time.monotonic()
+            try:
+                r = self._client.post(path, json=body)
+            except httpx.TransportError as exc:  # connect/read timeouts, resets
+                last = f"transport: {exc}"
+                if attempt + 1 < b.max_attempts:
+                    self.retries += 1
+                    time.sleep(b.backoff_s[min(attempt, len(b.backoff_s) - 1)])
+                    continue
+                break
+            if r.status_code in b.retry_status:
+                last = f"http {r.status_code}: {r.text[:300]}"
+                if attempt + 1 < b.max_attempts:
+                    self.retries += 1
+                    ra = r.headers.get("Retry-After", "")
+                    try:
+                        wait = min(float(ra), b.retry_after_cap_s) if ra else 0.0
+                    except ValueError:
+                        wait = 0.0
+                    wait = wait or b.backoff_s[min(attempt, len(b.backoff_s) - 1)]
+                    time.sleep(wait)
+                    continue
+                break
+            if r.status_code != 200:
+                # client error (bad key, bad request, moderation) — not retryable
+                err = r.json().get("error", {}) if r.text[:1] == "{" else {}
+                raise OpenRouterError(f"http {r.status_code}: {err.get('message') or r.text[:300]}")
+            self.latencies_s.append(time.monotonic() - t0)
+            return r.json()
+        raise OpenRouterError(f"giving up after {b.max_attempts} attempts: {last}")
 
     # ------------------------------------------------------------ generative --
 
@@ -71,9 +125,10 @@ class OpenRouter:
     ) -> tuple[dict, dict]:
         """Chat completion constrained to JSON. Returns (parsed_json, usage).
 
-        Robustness ladder (bounded, never silent): OpenRouter's response
-        healing plugin, then a salvage parse of the outermost {...} block,
-        then one full retry. After `attempts` failures we raise.
+        Robustness ladder (bounded, never silent): transport/5xx/429 retries
+        per the network budget, OpenRouter's response healing plugin, then a
+        salvage parse of the outermost {...} block, then one full re-request.
+        After that we raise.
         """
         body = {
             "model": model,
@@ -87,13 +142,9 @@ class OpenRouter:
             "reasoning": {"enabled": False},
             "plugins": [{"id": "response-healing"}],
         }
-        body = self._body(body)
         last_err = ""
         for _ in range(attempts):
-            r = self._client.post("/v1/chat/completions", json=body)
-            if r.status_code != 200:
-                raise OpenRouterError(f"chat {r.status_code}: {r.text[:300]}")
-            data = r.json()
+            data = self._post("/v1/chat/completions", self._body(body))
             usage = data.get("usage", {})
             self.spent_usd += usage.get("cost") or 0.0
             try:
@@ -108,10 +159,7 @@ class OpenRouter:
     def decide(self, model: str, state: dict, questions: dict) -> dict:
         """Jev-style decisions: typed questions, typed answers, no free text."""
         body = self._body({"model": model, "state": state, "questions": questions})
-        r = self._client.post("/alpha/decisions", json=body)
-        if r.status_code != 200:
-            raise OpenRouterError(f"decisions {r.status_code}: {r.text[:300]}")
-        data = r.json()
+        data = self._post("/alpha/decisions", body)
         self.spent_usd += data.get("usage", {}).get("cost") or 0.0
         return data.get("answers", {})
 

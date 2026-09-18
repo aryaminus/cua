@@ -1,0 +1,97 @@
+{
+  "budgets": {
+    "llm": {
+      "connect_timeout_s": 10.0,
+      "read_timeout_s": 60.0,
+      "write_timeout_s": 30.0,
+      "pool_timeout_s": 10.0,
+      "max_attempts": 3,
+      "backoff_s": [
+        0.5,
+        1.0
+      ],
+      "retry_status": [
+        408,
+        429,
+        500,
+        502,
+        503,
+        504
+      ],
+      "retry_after_cap_s": 30.0
+    },
+    "discovery": {
+      "wall_clock_s": 600.0,
+      "max_steps": 40,
+      "max_llm_calls": 60,
+      "max_cost_usd": 0.5
+    },
+    "replay": {
+      "postcondition_wait_s": 3.0,
+      "act_timeout_s": 10.0,
+      "total_s": 180.0
+    }
+  },
+  "runs_per_case": 5,
+  "cases": {
+    "success-1001": {
+      "stats": {
+        "n": 5,
+        "min_ms": 755,
+        "p50_ms": 796,
+        "p95_ms": 875,
+        "max_ms": 875
+      },
+      "status": "SUCCESS"
+    },
+    "business-not-found-9999": {
+      "stats": {
+        "n": 5,
+        "min_ms": 647,
+        "p50_ms": 650,
+        "p95_ms": 659,
+        "max_ms": 659
+      },
+      "status": "BUSINESS_OUTCOME"
+    },
+    "slow-response-absorbed-1006": {
+      "stats": {
+        "n": 5,
+        "min_ms": 3267,
+        "p50_ms": 3290,
+        "p95_ms": 3336,
+        "max_ms": 3336
+      },
+      "status": "SUCCESS"
+    },
+    "transient-busy-reload-1002": {
+      "stats": {
+        "n": 5,
+        "min_ms": 720,
+        "p50_ms": 748,
+        "p95_ms": 818,
+        "max_ms": 818
+      },
+      "status": "SUCCESS"
+    }
+  },
+  "server_boot_ms": 38,
+  "escalation_cycle_ms": 4661,
+  "escalation_ok": true,
+  "live_llm": {
+    "model": "deepseek/deepseek-v4.1-flash",
+    "calls": 3,
+    "latency_s": {
+      "min": 0.463,
+      "p50": 2.028,
+      "max": 2.085
+    },
+    "cost_usd": 2.9e-05,
+    "retries": 0
+  },
+  "test_suite": {
+    "ok": true,
+    "wall_s": 21.7,
+    "tail": "76 passed in 20.98s"
+  }
+}

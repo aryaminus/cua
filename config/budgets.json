@@ -1,0 +1,23 @@
+{
+  "llm": {
+    "connect_timeout_s": 10.0,
+    "read_timeout_s": 60.0,
+    "write_timeout_s": 30.0,
+    "pool_timeout_s": 10.0,
+    "max_attempts": 3,
+    "backoff_s": [0.5, 1.0],
+    "retry_status": [408, 429, 500, 502, 503, 504],
+    "retry_after_cap_s": 30.0
+  },
+  "discovery": {
+    "wall_clock_s": 600.0,
+    "max_steps": 40,
+    "max_llm_calls": 60,
+    "max_cost_usd": 0.5
+  },
+  "replay": {
+    "postcondition_wait_s": 3.0,
+    "act_timeout_s": 10.0,
+    "total_s": 180.0
+  }
+}

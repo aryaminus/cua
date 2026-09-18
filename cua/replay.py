@@ -26,13 +26,13 @@ import re
 import time
 from urllib.parse import urlparse
 
+from .budgets import ReplayBudget
 from .evidence import RunLog
 from .safety import Allowlist, redact_text
 from .schema import Artifact, Check, Failure, Recovery, ReplayResult, Step
 from .surface import Element, PageSurface, Snapshot, StaleElementError, resolve
 
-WAIT_TIMEOUT_S = 3.0
-POLL_S = 0.1
+POLL_S = 0.1  # poll cadence for post-condition waits and settle loops
 
 
 class _HardFailure(Exception):
@@ -52,6 +52,7 @@ class ReplayEngine:
         *,
         operator=None,
         allow_draft: bool = False,
+        budget: ReplayBudget | None = None,
     ):
         if artifact.status != "approved" and not allow_draft:
             raise ValueError(
@@ -63,6 +64,7 @@ class ReplayEngine:
         self.allow = allowlist
         self.elog = run
         self.operator = operator
+        self.budget = budget or ReplayBudget()
         self.recoveries: list[Recovery] = []
         self.steps_executed = 0
         # Engine-known transient markers (TEXT, from config — see allowlist.json
@@ -145,6 +147,14 @@ class ReplayEngine:
         escalation=None, resuming: bool = False,
     ) -> ReplayResult:
         for step in steps:
+            if time.monotonic() - started > self.budget.total_s:
+                # Whole-run ceiling (config/budgets.json replay.total_s): a
+                # pathological artifact must fail loud, not grind forever.
+                raise self._hard(
+                    step,
+                    f"run within total budget {self.budget.total_s}s",
+                    "budget exceeded: total",
+                )
             if resuming and step.wait is not None:
                 # After a handoff, the operator may have completed the failed
                 # step itself. A step whose post-condition already holds (and
@@ -254,7 +264,7 @@ class ReplayEngine:
                 self._record_recovery(step, "unexpected_dialog", f"dismissed: {d}")
             self.surface.clear_dialogs()
         if step.wait is not None:
-            deadline = time.monotonic() + WAIT_TIMEOUT_S
+            deadline = time.monotonic() + self.budget.postcondition_wait_s
             busy_seen = False
             while time.monotonic() < deadline:
                 snap = self.surface.snapshot()
@@ -291,7 +301,7 @@ class ReplayEngine:
         recovery) rather than accepted as the settled state — a busy page is
         not a state, it is a request to look again.
         """
-        deadline = time.monotonic() + WAIT_TIMEOUT_S
+        deadline = time.monotonic() + self.budget.postcondition_wait_s
         last_url = None
         busy_seen = False
         snap = self.surface.snapshot()
@@ -457,4 +467,12 @@ class ReplayEngine:
             escalation=escalation,
             steps_executed=self.steps_executed,
             duration_ms=int((time.monotonic() - started) * 1000),
+            budgets={
+                "in_effect": self.budget.model_dump(),
+                "actuals": {
+                    "duration_ms": int((time.monotonic() - started) * 1000),
+                    "steps_executed": self.steps_executed,
+                    "recoveries": len(self.recoveries),
+                },
+            },
         )

@@ -12,5 +12,17 @@
   "recoveries": [],
   "escalation": null,
   "steps_executed": 3,
-  "duration_ms": 799
+  "duration_ms": 818,
+  "budgets": {
+    "in_effect": {
+      "postcondition_wait_s": 3.0,
+      "act_timeout_s": 10.0,
+      "total_s": 180.0
+    },
+    "actuals": {
+      "duration_ms": 818,
+      "steps_executed": 3,
+      "recoveries": 0
+    }
+  }
 }

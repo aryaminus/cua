@@ -26,6 +26,7 @@ __pycache__/
 
 # Evidence: commit curated runs referenced by README/REPORT; ignore bulky scratch
 evidence/scratch/
+evidence/performance/scratch/
 
 # Operator session state
 *.operator-session.json

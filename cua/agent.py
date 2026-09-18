@@ -21,6 +21,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
+from .budgets import DiscoveryBudget
 from .evidence import RunLog
 from .openrouter import FakeLLM, OpenRouter
 from .safety import Allowlist, redact_text
@@ -109,6 +110,7 @@ class DiscoveryAgent:
         max_steps: int = 12,
         deadline_s: float = 600.0,
         operator=None,
+        budget: DiscoveryBudget | None = None,
     ):
         self.surface = surface
         self.llm = llm
@@ -119,6 +121,7 @@ class DiscoveryAgent:
         self.max_steps = max_steps
         self.deadline_s = deadline_s
         self.operator = operator
+        self.budget = budget or DiscoveryBudget()
 
     # ------------------------------------------------------------------ public
 
@@ -145,6 +148,19 @@ class DiscoveryAgent:
                 self.elog.line(f"step {n}: deadline exceeded ({self.deadline_s}s)")
                 return DiscoveryOutcome(
                     False, reason=f"timeout: deadline {self.deadline_s}s exceeded",
+                    trace=trace, llm_calls=llm_calls, stuck_signals=stuck_counter,
+                )
+            if llm_calls >= self.budget.max_llm_calls:
+                self.elog.line(f"step {n}: budget exceeded: llm_calls {llm_calls} >= {self.budget.max_llm_calls}")
+                return DiscoveryOutcome(
+                    False, reason=f"budget exceeded: llm_calls {llm_calls} >= {self.budget.max_llm_calls}",
+                    trace=trace, llm_calls=llm_calls, stuck_signals=stuck_counter,
+                )
+            if getattr(self.llm, "spent_usd", 0.0) > self.budget.max_cost_usd:
+                spent = self.llm.spent_usd
+                self.elog.line(f"step {n}: budget exceeded: cost ${spent:.4f} > ${self.budget.max_cost_usd:.2f}")
+                return DiscoveryOutcome(
+                    False, reason=f"budget exceeded: cost ${spent:.4f} > ${self.budget.max_cost_usd:.2f}",
                     trace=trace, llm_calls=llm_calls, stuck_signals=stuck_counter,
                 )
             n += 1

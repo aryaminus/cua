@@ -24,7 +24,7 @@ Design write-up: **[REPORT.md](REPORT.md)** · Run evidence: **[evidence/](evide
 uv sync                                   # Python 3.12+, creates .venv
 uv run playwright install chromium        # one-time browser download
 cp .env.example .env                      # add OPENROUTER_API_KEY (discovery only)
-uv run pytest -q                          # 65 tests, offline, no keys needed
+uv run pytest -q                          # 76 tests, offline, no keys needed
 ```
 
 ## Demo path — the exact commands
@@ -75,6 +75,15 @@ takes the live session → run resumes and completes):
 uv run cua demo --part escalation
 ```
 
+**Latency/cost benchmark** (offline replay percentiles, escalation cycle,
+server boot; `--live` adds 3 LLM probes ≈ $0.00003; `--tests` times the
+suite — writes `evidence/performance/bench.json`, the baseline behind
+REPORT.md §7):
+
+```bash
+uv run cua bench --runs 5 --live --tests
+```
+
 **Guardrail refusal demo** (a live model told to perform the irreversible
 freeze — it navigates there, is refused by the allowlist, and declines the
 unsafe goal; see REPORT.md §Safety):
@@ -108,13 +117,15 @@ cua/
   agent.py        LLM discovery loop + artifact compiler (stuck detection incl. Jev)
   safety.py       allowlist (default-deny) + PII/financial redaction
   escalation.py   intervention requests, control-state machine, operator protocol
+  budgets.py      typed runtime budgets (config/budgets.json) — enforced, never advisory
   evidence.py     generated run records (everything persisted is redacted)
   openrouter.py   chat completions + OpenRouter Decisions API (typesafe/jev)
-  cli.py          serve / discover / approve / replay / demo
+  cli.py          serve / discover / approve / replay / demo / bench
 config/allowlist.json   origins, routes, action types, risky-control patterns
-tests/            65 tests: offline engine suite + real-browser integration
+config/budgets.json     runtime budgets: timeouts, retries, cost/steps caps (REPORT.md §7)
+tests/            76 tests: offline engine suite + real-browser integration
 evidence/         generated run records (see evidence/README.md)
-REPORT.md         the seven-section design write-up
+REPORT.md         the eight-section design write-up
 ```
 
 ## Configuration
@@ -122,7 +133,9 @@ REPORT.md         the seven-section design write-up
 See [`.env.example`](.env.example): `OPENROUTER_API_KEY` (discovery only),
 `CUA_MODEL` (default `deepseek/deepseek-v4.1-flash`), optional
 `CUA_JEV_MODEL` (`typesafe/jev-1.13`, used for stuck detection), `CUA_APP_URL`,
-`CUA_ALLOWLIST`, and the mock app's fault switches.
+`CUA_ALLOWLIST`, and the mock app's fault switches. Runtime budgets live in
+[`config/budgets.json`](config/budgets.json) and can be overridden per run:
+`uv run cua replay ... --budget replay.total_s=30`.
 
 ## What is real vs mocked
 

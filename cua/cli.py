@@ -25,6 +25,7 @@ from dotenv import load_dotenv
 
 from . import mockapp
 from .agent import DiscoveryAgent
+from .budgets import Budgets, load_budgets
 from .evidence import RunLog
 from .openrouter import FakeLLM, OpenRouter
 from .replay import ReplayEngine
@@ -110,6 +111,17 @@ _srv = None
 
 # ------------------------------------------------------------------ commands --
 
+def _budgets_from(args) -> Budgets:
+    """Defaults <- config/budgets.json <- --budget group.key=value overrides."""
+    b = load_budgets()
+    for ov in getattr(args, "budget", None) or []:
+        if "=" not in ov:
+            raise SystemExit(f"--budget expects group.key=value, got {ov!r}")
+        dotted, _, value = ov.partition("=")
+        b.apply(dotted, value)
+    return b
+
+
 def cmd_serve(args) -> None:
     mockapp.reset_state()
     print(f"MemberServ console on http://127.0.0.1:{args.port} (Ctrl-C to stop)")
@@ -124,12 +136,14 @@ def cmd_discover(args) -> None:
         name: Param(name=name, type="string", example=ex, description=f"{name} (from CLI)")
         for name, ex in params.items()
     }
-    llm = OpenRouter()
+    b = _budgets_from(args)
+    llm = OpenRouter(budget=b.llm)
     model = os.environ.get("CUA_MODEL", "deepseek/deepseek-v4.1-flash")
     jev = os.environ.get("CUA_JEV_MODEL", "")
     run.meta(mode="discovery", goal=args.goal, model=model, decisions_model=jev or None,
-             params=params, app_url=APP_URL, allowlist=str(args.allowlist))
-    surface = PlaywrightSurface(headless=not args.headed)
+             params=params, app_url=APP_URL, allowlist=str(args.allowlist),
+             budgets=b.model_dump())
+    surface = PlaywrightSurface(headless=not args.headed, act_timeout_s=b.replay.act_timeout_s)
     try:
         operator = None
         if args.operator_script:
@@ -143,7 +157,9 @@ def cmd_discover(args) -> None:
             operator = TerminalOperator()
         agent = DiscoveryAgent(
             surface, llm, allow, run, model=model, decisions_model=jev,
-            max_steps=args.max_steps, deadline_s=args.deadline_s, operator=operator,
+            max_steps=args.max_steps or b.discovery.max_steps,
+            deadline_s=args.deadline_s or b.discovery.wall_clock_s,
+            operator=operator, budget=b.discovery,
         )
         out = agent.run(args.goal, args.entry or APP_URL, param_spec, args.run_id,
                         name=args.name)
@@ -159,7 +175,9 @@ def cmd_discover(args) -> None:
         run.finish(status="failed", reason=out.reason)
         print(f"DISCOVERY FAILED: {out.reason}")
         sys.exit(1)
-    run.finish(status="ok", llm_calls=out.llm_calls, cost_usd=round(llm.spent_usd, 6))
+    run.finish(status="ok", llm_calls=out.llm_calls, cost_usd=round(llm.spent_usd, 6),
+               llm_latency_s=[round(x, 3) for x in llm.latencies_s],
+               llm_retries=llm.retries)
 
 
 def cmd_approve(args) -> None:
@@ -290,10 +308,11 @@ def cmd_replay(args) -> None:
 
         operator = TerminalOperator()
     _ensure_server()  # standalone boots the default port; the demo re-points via CUA_APP_URL
-    surface = PlaywrightSurface(headless=not args.headed)
+    b = _budgets_from(args)
+    surface = PlaywrightSurface(headless=not args.headed, act_timeout_s=b.replay.act_timeout_s)
     try:
         engine = ReplayEngine(surface, art, allow, run, operator=operator,
-                              allow_draft=args.allow_draft)
+                              allow_draft=args.allow_draft, budget=b.replay)
         result = engine.run(params)
     finally:
         surface.close()
@@ -301,9 +320,10 @@ def cmd_replay(args) -> None:
     if args.stability > 1:
         sigs = [result.summarize()]
         for _ in range(args.stability - 1):
-            s = PlaywrightSurface(headless=True)
+            s = PlaywrightSurface(headless=True, act_timeout_s=b.replay.act_timeout_s)
             try:
-                r = ReplayEngine(s, art, allow, run, allow_draft=args.allow_draft).run(params)
+                r = ReplayEngine(s, art, allow, run, allow_draft=args.allow_draft,
+                                 budget=b.replay).run(params)
                 sigs.append(r.summarize())
             finally:
                 s.close()
@@ -321,6 +341,7 @@ def cmd_demo(args) -> None:
     # their own port so an external `cua serve` on 8791 never collides.
     _ensure_server()
     allow = Allowlist.load()
+    b = _budgets_from(args)
     base = Path(args.evidence_root) if args.evidence_root else EVIDENCE
 
     app_base = {"url": APP_URL}  # mutable base: fault phases re-point it
@@ -329,11 +350,11 @@ def cmd_demo(args) -> None:
         run = RunLog(base, "discovery-offline")
         run.meta(mode="discovery", model="fake-llm (scripted)",
                  note="offline demo; live artifact in discovery-live/")
-        surface = PlaywrightSurface(headless=True)
+        surface = PlaywrightSurface(headless=True, act_timeout_s=b.replay.act_timeout_s)
         try:
             agent = DiscoveryAgent(
                 surface, FakeLLM(FAKE_SCRIPT), allow, run, model="fake-llm",
-                max_steps=8, operator=None,
+                max_steps=8, operator=None, budget=b.discovery,
             )
             params = {"member_id": Param(name="member_id", type="string", example="1001",
                                          description="member number to look up")}
@@ -393,11 +414,11 @@ def cmd_demo(args) -> None:
                 mockapp.reset_state()
                 run = RunLog(base, f"replay-{run_id}")
                 run.meta(mode="replay-matrix", case=run_id, params=params, env=env)
-            surface = PlaywrightSurface(headless=True)
+            surface = PlaywrightSurface(headless=True, act_timeout_s=b.replay.act_timeout_s)
             try:
                 r = ReplayEngine(surface, art_use,
                                  fault_allow if env else _matrix_allow, run,
-                                 allow_draft=True).run(params)
+                                 allow_draft=True, budget=b.replay).run(params)
             finally:
                 surface.close()
                 if env:
@@ -412,45 +433,7 @@ def cmd_demo(args) -> None:
             print(f"[matrix] {mark} {run_id}: {r.summarize()}")
 
     if args.part in ("escalation", "all"):
-        art = Artifact.model_validate_json(art_path.read_text())
-        fault_base = "http://127.0.0.1:8792"
-        saved = {k: os.environ.get(k) for k in ("MOCKAPP_SESSION_TTL",)}
-        os.environ["MOCKAPP_SESSION_TTL"] = "2"
-        mockapp.reset_state()
-        _ensure_server(port=8792)
-        art8792, allow8792 = _port_rewrite(art, APP_URL, fault_base, allow)
-        run = RunLog(base, "replay-escalation-handoff")
-        run.meta(mode="escalation-demo", params={"member_id": "1002"},
-                 env={"MOCKAPP_SESSION_TTL": "2"},
-                 note="session expiry forces hard failure; operator takes the live session")
-        script = (
-            "look; goto " + fault_base + "/; goto " + fault_base + "/search; "
-            "fill textbox 'Member ID' 1002; click button 'Search'; look; resume"
-        )
-        from .escalation import ScriptedOperator
-
-        surface = PlaywrightSurface(headless=True)
-        try:
-            engine = ReplayEngine(
-                surface, art8792, allow8792, run, operator=ScriptedOperator(
-                    [c.strip() for c in script.split(";")]),
-                allow_draft=True,
-            )
-            r = engine.run({"member_id": "1002"})
-        finally:
-            surface.close()
-            for k, v in saved.items():
-                if v is None:
-                    os.environ.pop(k, None)
-                else:
-                    os.environ[k] = v
-            mockapp.reset_state()
-        expect = "SUCCESS"
-        good = r.status == expect and r.escalation and r.escalation.resumed
-        mark = "OK " if good else "UNEXPECTED"
-        print(f"[escalation] {mark} status={r.status} escalated={bool(r.escalation)} "
-              f"resumed={r.escalation.resumed if r.escalation else None} "
-              f"ops={len(r.escalation.operator_actions) if r.escalation else 0}")
+        _phase_escalation(base, allow, b)  # prints its own [escalation] line
 
     if args.part in ("stability", "all"):
         art = Artifact.model_validate_json(art_path.read_text())
@@ -458,9 +441,10 @@ def cmd_demo(args) -> None:
         run = RunLog(base, "replay-stability")
         sigs = []
         for _ in range(5):
-            surface = PlaywrightSurface(headless=True)
+            surface = PlaywrightSurface(headless=True, act_timeout_s=b.replay.act_timeout_s)
             try:
-                r = ReplayEngine(surface, art, allow, run, allow_draft=True).run(
+                r = ReplayEngine(surface, art, allow, run, allow_draft=True,
+                                 budget=b.replay).run(
                     {"member_id": "1001"})
             finally:
                 surface.close()
@@ -470,7 +454,208 @@ def cmd_demo(args) -> None:
         print(f"[stability] 5 runs identical={identical}: {sigs[0]}")
 
 
+def _phase_escalation(base: Path, allow: Allowlist, b: Budgets) -> tuple[bool, int]:
+    """Escalation demo phase, factored so `cua bench` can time the same
+    scenario without duplicating the fault wiring. Returns (ok, duration_ms)."""
+    import time as _time
+
+    art = Artifact.model_validate_json((base / "discovery-offline" / "artifact.json").read_text())
+    fault_base = "http://127.0.0.1:8792"
+    saved = {k: os.environ.get(k) for k in ("MOCKAPP_SESSION_TTL",)}
+    os.environ["MOCKAPP_SESSION_TTL"] = "2"
+    mockapp.reset_state()
+    _ensure_server(port=8792)
+    art8792, allow8792 = _port_rewrite(art, APP_URL, fault_base, allow)
+    run = RunLog(base, "replay-escalation-handoff")
+    run.meta(mode="escalation-demo", params={"member_id": "1002"},
+             env={"MOCKAPP_SESSION_TTL": "2"},
+             note="session expiry forces hard failure; operator takes the live session")
+    script = (
+        "look; goto " + fault_base + "/; goto " + fault_base + "/search; "
+        "fill textbox 'Member ID' 1002; click button 'Search'; look; resume"
+    )
+    from .escalation import ScriptedOperator
+
+    t0 = _time.monotonic()
+    surface = PlaywrightSurface(headless=True, act_timeout_s=b.replay.act_timeout_s)
+    try:
+        engine = ReplayEngine(
+            surface, art8792, allow8792, run, operator=ScriptedOperator(
+                [c.strip() for c in script.split(";")]),
+            allow_draft=True, budget=b.replay,
+        )
+        r = engine.run({"member_id": "1002"})
+    finally:
+        surface.close()
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        mockapp.reset_state()
+    ms = int((_time.monotonic() - t0) * 1000)
+    good = r.status == "SUCCESS" and r.escalation is not None and r.escalation.resumed
+    print(f"[escalation] {'OK ' if good else 'UNEXPECTED'} status={r.status} "
+          f"escalated={bool(r.escalation)} "
+          f"resumed={r.escalation.resumed if r.escalation else None} "
+          f"ops={len(r.escalation.operator_actions) if r.escalation else 0} ms={ms}")
+    return good, ms
+
+
 # ------------------------------------------------------------------ plumbing --
+
+def _pct(sorted_ms: list[int], p: float) -> int:
+    """Percentile of an already-sorted list (inclusive, nearest-rank)."""
+    if not sorted_ms:
+        return 0
+    k = max(0, min(len(sorted_ms) - 1, round(p / 100 * (len(sorted_ms) - 1))))
+    return sorted_ms[k]
+
+
+def _stats(ms: list[int]) -> dict:
+    s = sorted(ms)
+    return {
+        "n": len(s), "min_ms": s[0], "p50_ms": _pct(s, 50), "p95_ms": _pct(s, 95),
+        "max_ms": s[-1],
+    }
+
+
+def cmd_bench(args) -> None:
+    """Latency/cost benchmark: baseline numbers behind REPORT.md §6.
+
+    Offline by default (replay cases, escalation cycle, server boot). --live
+    adds three minimal LLM probes (~$0.0002) for API latency; --tests times
+    the offline suite. Writes evidence/performance/bench.json.
+    """
+    import time as _time
+
+    b = _budgets_from(args)
+    _ensure_server()
+    allow = Allowlist.load()
+    root = Path(args.evidence_root) if args.evidence_root else EVIDENCE
+    art_path = root / "discovery-offline" / "artifact.json"
+    if not art_path.exists():
+        cmd_demo(argparse.Namespace(part="discovery-offline", evidence_root=str(root),
+                                    budget=args.budget))
+    art = Artifact.model_validate_json(art_path.read_text())
+
+    report: dict = {"budgets": b.model_dump(), "runs_per_case": args.runs, "cases": {}}
+
+    # server cold boot: fresh make_server on a scratch port -> first 200
+    from werkzeug.serving import make_server as _mk
+
+    t0 = _time.monotonic()
+    mockapp.reset_state()
+    srv = _mk("127.0.0.1", 8799, mockapp.app, threaded=False)
+    import threading as _th
+
+    _th.Thread(target=srv.serve_forever, daemon=True).start()
+    import urllib.request as _ur
+
+    _ur.urlopen("http://127.0.0.1:8799/search", timeout=5).read()
+    report["server_boot_ms"] = int((_time.monotonic() - t0) * 1000)
+    srv.shutdown()
+    srv.server_close()
+
+    # replay cases: canonical subset x N (fault-free + slow + busy)
+    cases = [
+        ("success-1001", {"member_id": "1001"}, {}),
+        ("business-not-found-9999", {"member_id": "9999"}, {}),
+        ("slow-response-absorbed-1006", {"member_id": "1006"},
+         {"MOCKAPP_SLOW_MEMBER": "1006", "MOCKAPP_SLOW_SECONDS": "2.5"}),
+        ("transient-busy-reload-1002", {"member_id": "1002"},
+         {"MOCKAPP_BUSY_MEMBER": "1002"}),
+    ]
+    for run_id, params, env in cases:
+        durations: list[int] = []
+        saved = {k: os.environ.get(k) for k in set(env)} if env else {}
+        art_use, allow_use = art, allow
+        if env:
+            os.environ.update(env)
+            mockapp.reset_state()
+            _ensure_server(port=8793)
+            art_use, allow_use = _port_rewrite(art, APP_URL, "http://127.0.0.1:8793", allow)
+        for i in range(args.runs):
+            if not env:
+                mockapp.reset_state()
+            surface = PlaywrightSurface(headless=True, act_timeout_s=b.replay.act_timeout_s)
+            try:
+                scratch = root / "performance" / "scratch"
+                scratch.mkdir(parents=True, exist_ok=True)
+                run = RunLog(scratch, f"bench-{run_id}-{i}")
+                r = ReplayEngine(surface, art_use, allow_use, run, allow_draft=True,
+                                 budget=b.replay).run(params)
+            finally:
+                surface.close()
+            durations.append(r.duration_ms)
+        if env:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+            mockapp.reset_state()
+        report["cases"][run_id] = {"stats": _stats(durations), "status": r.status}
+
+    # escalation cycle (scripted operator, dedicated fault server)
+    good, esc_ms = _phase_escalation(root, allow, b)
+    report["escalation_cycle_ms"] = esc_ms
+    report["escalation_ok"] = good
+
+    if args.live:
+        llm = OpenRouter(budget=b.llm)
+        model = os.environ.get("CUA_MODEL", "deepseek/deepseek-v4.1-flash")
+        lat: list[float] = []
+        for _ in range(3):
+            reply, _u = llm.chat_json(model, "Reply with JSON.",
+                                      [{"role": "user", "content": '{"ack": true}'}],
+                                      max_tokens=50)
+            assert reply.get("ack") or reply, reply  # any parseable JSON counts
+        lat = [round(x, 3) for x in llm.latencies_s]
+        report["live_llm"] = {
+            "model": model, "calls": len(lat),
+            "latency_s": {"min": min(lat), "p50": sorted(lat)[len(lat) // 2], "max": max(lat)},
+            "cost_usd": round(llm.spent_usd, 6), "retries": llm.retries,
+        }
+
+    if args.tests:
+        import subprocess
+
+        # Release every port bench holds (8791/8792/8793/8799) first: the
+        # suite's integration tests bind their own servers and must not race us.
+        for srv in (_srv or {}).values():
+            srv.shutdown()
+            srv.server_close()
+        _srv.clear()
+        t0 = _time.monotonic()
+        proc = subprocess.run(
+            ["uv", "run", "python", "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider"],
+            capture_output=True, text=True, cwd=Path(__file__).resolve().parent.parent,
+        )
+        report["test_suite"] = {
+            "ok": proc.returncode == 0,
+            "wall_s": round(_time.monotonic() - t0, 1),
+            "tail": proc.stdout.strip().splitlines()[-1] if proc.stdout.strip() else "",
+        }
+
+    out = root / "performance"
+    out.mkdir(parents=True, exist_ok=True)
+    # strip scratch from the report (it is bulky; bench.json is the artifact)
+    (out / "bench.json").write_text(json.dumps(report, indent=2))
+    print(f"[bench] wrote {out / 'bench.json'}")
+    for case, info in report["cases"].items():
+        st = info["stats"]
+        print(f"[bench] {case:34s} p50={st['p50_ms']:>5}ms p95={st['p95_ms']:>5}ms "
+              f"max={st['max_ms']:>5}ms ({info['status']})")
+    print(f"[bench] server_boot={report['server_boot_ms']}ms "
+          f"escalation_cycle={report['escalation_cycle_ms']}ms")
+    if "live_llm" in report:
+        lv = report["live_llm"]
+        print(f"[bench] live_llm p50={lv['latency_s']['p50']}s cost=${lv['cost_usd']}")
+    if "test_suite" in report:
+        ts = report["test_suite"]
+        print(f"[bench] tests ok={ts['ok']} wall={ts['wall_s']}s")
+
 
 def _port_rewrite(artifact: Artifact, src_base: str, dst_base: str,
                   allowlist: Allowlist) -> tuple[Artifact, Allowlist]:
@@ -534,11 +719,14 @@ def main(argv=None) -> None:
     s.add_argument("--name", default=None, help="capability name (default: derived from goal)")
     s.add_argument("--param", action="append", default=[], metavar="name=example")
     s.add_argument("--entry", default=None, help="entry URL (default $CUA_APP_URL)")
-    s.add_argument("--max-steps", type=int, default=12)
-    s.add_argument("--deadline-s", type=float, default=600.0,
-                   help="wall-clock timeout for the loop (§3.1 stopping condition)")
+    s.add_argument("--max-steps", type=int, default=None,
+                   help="step ceiling (default: budgets discovery.max_steps)")
+    s.add_argument("--deadline-s", type=float, default=None,
+                   help="wall-clock timeout (default: budgets discovery.wall_clock_s)")
     s.add_argument("--run-id", default=None)
     s.add_argument("--allowlist", default=None)
+    s.add_argument("--budget", action="append", default=[], metavar="group.key=value",
+                   help="override a runtime budget (repeatable)")
     s.add_argument("--operator-script", default=None,
                    help="';'-separated operator commands if discovery gets stuck")
     s.add_argument("--operator-repl", action="store_true",
@@ -570,13 +758,26 @@ def main(argv=None) -> None:
                    help="';'-separated operator commands for escalation handoff")
     s.add_argument("--operator-repl", action="store_true")
     s.add_argument("--headed", action="store_true")
+    s.add_argument("--budget", action="append", default=[], metavar="group.key=value",
+                   help="override a runtime budget (repeatable)")
     s.set_defaults(fn=cmd_replay)
 
     s = sub.add_parser("demo", help="offline demo phases: matrix | escalation | stability | all")
     s.add_argument("--part", default="all",
                    choices=["discovery-offline", "matrix", "escalation", "stability", "all"])
     s.add_argument("--evidence-root", default=None)
+    s.add_argument("--budget", action="append", default=[], metavar="group.key=value",
+                   help="override a runtime budget (repeatable), e.g. replay.total_s=30")
     s.set_defaults(fn=cmd_demo)
+
+    s = sub.add_parser("bench", help="latency/cost benchmark -> evidence/performance/bench.json")
+    s.add_argument("--runs", type=int, default=5, help="runs per replay case")
+    s.add_argument("--live", action="store_true",
+                   help="add 3 live LLM probes (~$0.0002) for API latency")
+    s.add_argument("--tests", action="store_true", help="time the offline test suite too")
+    s.add_argument("--evidence-root", default=None)
+    s.add_argument("--budget", action="append", default=[], metavar="group.key=value")
+    s.set_defaults(fn=cmd_bench)
 
     args = ap.parse_args(argv)
     args.fn(args)
