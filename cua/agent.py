@@ -175,6 +175,9 @@ class DiscoveryAgent:
                 return DiscoveryOutcome(False, reason=reply.get("reason", "model gave up"), trace=trace, llm_calls=llm_calls)
 
             messages.append({"role": "assistant", "content": str(reply)})
+            # History carries only the typed decision + one-line outcome per
+            # step; the full conversation is never persisted and never compiled
+            # into the artifact (transcript/artifacts stay decoupled by design).
             guard = self._guard(action, reply, snap)
             if not guard[0]:
                 trace.append(TraceStep(n=n, action=action, reason=guard[1], blocked=True,

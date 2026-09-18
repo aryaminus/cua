@@ -35,6 +35,7 @@ exist, both checked in:
 | `discovery-offline/` | Scripted offline discovery (no API key) producing the same approved artifact shape — for keyless demos | `cua demo --part discovery-offline` |
 
 Files per run: `meta.json` (config, params, provenance), `steps/NNN.json`
-(redacted observations, decisions/actions, guard verdicts), `steps/*.png`
+(redacted observations, decisions/actions, guard verdicts — typed decision
+JSON only, never the conversation history), `steps/*.png`
 (failure + escalation screenshots), `result.json` (the typed replay result),
 `run.log`, and `intervention.json` where an escalation occurred.
