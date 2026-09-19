@@ -38,7 +38,7 @@ Judgment calls and why, one per §4 bullet:
   continue/stuck pair asked only when the deterministic no-progress rule
   fires. That pair is calibrated: 12 labeled probes (varied observations =
   progressing, identical repeats = stuck) score 83% rule accuracy, Brier
-  0.075 on the noul question and 0.201 on the choice question, with every
+  0.075 on the noul question and 0.195 on the choice question, with every
   miss a false-stuck on a transient page, the safe direction
   (`cua bench --jev`, `evidence/performance/jev-calibration.json`).
   Recorded cost: $0.0008 discovery, $0 replay.
@@ -150,10 +150,11 @@ possible without per-tenant re-recording.
 
 Stuck detection: in replay, any hard failure after recovery attempts; in
 discovery, a no-change rule plus an optional Jev decision, two consecutive
-signals stopping the run: the community-validated "still making progress?"
-pattern. Calibration (`evidence/performance/jev-calibration.json`): all six
-stuck probes caught at confidence 1.0; healthy probes answer continue at
-0.89–0.90. On trigger:
+signals stopping the run: the classic "still making progress?" loop
+guard, decided by a typed question instead of free-text self-report. Calibration (`evidence/performance/jev-calibration.json`): all six stuck
+probes caught (confidence ≥ 0.99); four of six healthy probes rule-continue
+(two at 0.89–0.90, two transient cases leaning stuck at low confidence,
+the safe direction). On trigger:
 
 1. **Detect & route.** `intervention.json`: capability, failed step, expected
    vs observed, URL, redacted excerpt, screenshot, command list.
@@ -183,9 +184,9 @@ persisted and everything sent to the model: the loop never sees a raw SSN
 gitignored; artifacts hold placeholders, never credentials.
 
 **Limits:** role/name patterns suit a known app catalog, not the open web.
-The same pre-execution shape has field evidence of most-attacks caught,
-near-zero false blocks, at a fraction of a judge's cost, cited as
-validation, not a new component. Dialog auto-dismissal suits interstitials,
+A rule-based pre-execution check is cheaper than a model judge, cannot
+itself be prompt-injected, and is fully coverable by offline tests: the
+component we can prove, not probabilistically vouch for. Dialog auto-dismissal suits interstitials,
 not consequential choices. Redaction is regex-based, including a PAN
 pattern that deliberately over-matches long digit runs (safe direction for
 fixtures; production would scope it at the schema layer). Model supply: Jev
@@ -201,7 +202,9 @@ overrides) is enforced (never advisory) and every replay result
 self-describes its envelope (`result.json` gains `budgets.{in_effect,
 actuals}`). Breaches are typed failures with `budget exceeded` reasons.
 
-**Network behavior** (OpenRouter's documented contract): 408/429/5xx and
+**Network behavior** (per OpenRouter's documented error contract,
+[openrouter.ai/docs/api_reference/errors-and-debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging)):
+408/429/5xx and
 transport errors retried up to 3 attempts with backoff; `Retry-After`
 honored on 429/503 (capped at 30s); 4xx client errors (bad key, bad
 request, moderation) never retried. Timeouts split connect 10s / read 60s
