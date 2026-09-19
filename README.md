@@ -15,6 +15,7 @@ no label association, non-semantic markup, JS-confirm dialogs on the
 irreversible action, and deterministic fault injection (not-found, validation
 error, session expiry, server error).
 
+Project page: **[cua-aryaminus.netlify.app](https://cua-aryaminus.netlify.app)** ·
 Design write-up: **[DESIGN.md](DESIGN.md)** · Run evidence: **[evidence/](evidence/)**
 
 ## Quick start
@@ -151,12 +152,13 @@ See [`.env.example`](.env.example): `OPENROUTER_API_KEY` (discovery only),
 
 ## Site
 
+Live at **[cua-aryaminus.netlify.app](https://cua-aryaminus.netlify.app)**.
 `site/` is a self-contained static project page. `netlify.toml` at the root
 configures a zero-build deploy (`publish = "site"`); the
 `deploy-site.yml` workflow redeploys it on every push to `main` that touches
 the page. One-time setup: create a Netlify token
 (app.netlify.com → User settings → Applications) and
-`gh secret set NETLIFY_AUTH_TOKEN`; the site is created automatically on
+`gh secret set NETLIFY_AUTH_TOKEN` — the site is created automatically on
 first deploy.
 
 ## License
