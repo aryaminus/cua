@@ -81,7 +81,7 @@ suite; writes `evidence/performance/bench.json`, the baseline behind
 DESIGN.md §7):
 
 ```bash
-uv run cua bench --runs 5 --live --tests
+uv run cua bench --runs 5 --live --tests --jev
 ```
 
 **Guardrail refusal demo** (a live model told to perform the irreversible

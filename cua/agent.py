@@ -97,6 +97,42 @@ def _element_table(snap) -> str:
     return "\n".join(lines) or "(no interactive elements)"
 
 
+# The continue/stuck question set sent to Jev (typesafe/jev) when the
+# deterministic no-progress rule fires. Module-level so `cua bench --jev`
+# calibrates the exact production questions, never a drifted copy.
+STUCK_QUESTIONS = {
+    "progress": {
+        "type": "noul",
+        "instructions": "Given the goal and recent actions, is the agent making real progress right now?",
+    },
+    "mode": {
+        "type": "choice",
+        "instructions": "Should the loop continue, or is it stuck?",
+        "criteria": {
+            "continue": "Page state is changing and actions advance the goal",
+            "stuck": "Actions repeat, state stops changing, or the agent loops",
+        },
+    },
+}
+
+
+def stuck_per_answers(answers: dict) -> tuple[bool, float]:
+    """The production stuck rule, and the probability it assigned to 'stuck'.
+
+    Rule (mirrors _update_stuck): stuck when the mode choice says stuck at
+    confidence >= 0.5, or the progress noul drops below 0.3. The returned
+    probability is from the choice question alone: the chosen option's
+    confidence, mapped onto the stuck class.
+    """
+    mode = answers.get("mode", {})
+    prog = answers.get("progress", {})
+    choice_stuck = mode.get("choice") == "stuck"
+    conf = float(mode.get("confidence", 1.0))
+    p_stuck = conf if choice_stuck else 1.0 - conf
+    stuck = (choice_stuck and conf >= 0.5) or float(prog.get("noul", 1.0)) < 0.3
+    return stuck, max(0.0, min(1.0, p_stuck))
+
+
 class DiscoveryAgent:
     def __init__(
         self,
@@ -328,26 +364,10 @@ class DiscoveryAgent:
                         "page_text_excerpt": redact_text(snap.text)[:400],
                         "recent_actions": [m["content"][:120] for m in messages[-4:]],
                     },
-                    questions={
-                        "progress": {
-                            "type": "noul",
-                            "instructions": "Given the goal and recent actions, is the agent making real progress right now?",
-                        },
-                        "mode": {
-                            "type": "choice",
-                            "instructions": "Should the loop continue, or is it stuck?",
-                            "criteria": {
-                                "continue": "Page state is changing and actions advance the goal",
-                                "stuck": "Actions repeat, state stops changing, or the agent loops",
-                            },
-                        },
-                    },
+                    questions=STUCK_QUESTIONS,
                 )
-                mode = answers.get("mode", {})
-                prog = answers.get("progress", {})
-                if mode.get("choice") == "stuck" and mode.get("confidence", 1) >= 0.5:
-                    return counter + 1
-                if prog.get("noul", 1.0) < 0.3:
+                stuck, _ = stuck_per_answers(answers)
+                if stuck:
                     return counter + 1
                 return 0
             except Exception as exc:  # Jev is advisory: never fail discovery on it

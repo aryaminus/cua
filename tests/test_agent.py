@@ -136,3 +136,49 @@ def test_seam_register_every_choice_maps_to_a_tested_module():
     for needle, (module, where) in mapping.items():
         assert (root / module).exists(), f"{where}: {module} missing"
         assert needle.lower() in report.lower(), f"{where}: {needle!r} not defended"
+
+
+# ------------------------------------------------------- stuck rule + brier --
+
+def test_stuck_rule_confident_correct_choice():
+    from cua.agent import stuck_per_answers
+    stuck, p = stuck_per_answers({"mode": {"choice": "stuck", "confidence": 0.9},
+                                  "progress": {"noul": 0.8}})
+    assert stuck and abs(p - 0.9) < 1e-9
+
+
+def test_stuck_rule_continue_maps_probability():
+    from cua.agent import stuck_per_answers
+    stuck, p = stuck_per_answers({"mode": {"choice": "continue", "confidence": 0.8},
+                                  "progress": {"noul": 0.9}})
+    assert not stuck and abs(p - 0.2) < 1e-9  # 1 - conf
+
+
+def test_stuck_rule_low_confidence_choice_ignored_but_brier_uses_it():
+    from cua.agent import stuck_per_answers
+    stuck, p = stuck_per_answers({"mode": {"choice": "stuck", "confidence": 0.4},
+                                  "progress": {"noul": 0.9}})
+    assert not stuck and abs(p - 0.4) < 1e-9  # below threshold: not stuck, but p kept
+
+
+def test_stuck_rule_noul_override():
+    from cua.agent import stuck_per_answers
+    stuck, p = stuck_per_answers({"mode": {"choice": "continue", "confidence": 0.7},
+                                  "progress": {"noul": 0.1}})
+    assert stuck and abs(p - 0.3) < 1e-9  # noul < 0.3 flips the rule
+
+
+def test_brier_math_perfect_and_wrong():
+    from cua.agent import stuck_per_answers
+    _, p_right = stuck_per_answers({"mode": {"choice": "stuck", "confidence": 1.0}, "progress": {}})
+    assert (p_right - 1.0) ** 2 == 0.0                       # perfect
+    _, p_wrong = stuck_per_answers({"mode": {"choice": "continue", "confidence": 0.8},
+                                    "progress": {"noul": 0.9}})
+    assert abs((p_wrong - 1.0) ** 2 - 0.64) < 1e-9           # confidently wrong
+
+
+def test_production_questions_are_shared_with_calibration():
+    from cua.agent import STUCK_QUESTIONS
+    assert STUCK_QUESTIONS["mode"]["type"] == "choice"
+    assert set(STUCK_QUESTIONS["mode"]["criteria"]) == {"continue", "stuck"}
+    assert STUCK_QUESTIONS["progress"]["type"] == "noul"

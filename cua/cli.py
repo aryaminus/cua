@@ -618,6 +618,10 @@ def cmd_bench(args) -> None:
             "cost_usd": round(llm.spent_usd, 6), "retries": llm.retries,
         }
 
+    if args.jev:
+        cal = _jev_calibration(b, root)
+        report["jev_calibration"] = {k: v for k, v in cal.items() if k != "probes"}
+
     if args.tests:
         import subprocess
 
@@ -655,6 +659,100 @@ def cmd_bench(args) -> None:
     if "test_suite" in report:
         ts = report["test_suite"]
         print(f"[bench] tests ok={ts['ok']} wall={ts['wall_s']}s")
+
+
+def _jev_calibration(b: Budgets, root: Path) -> dict:
+    """Score Jev's continue/stuck answers against labeled probe states.
+
+    Ground truth is by construction: each probe is a (state, label) pair
+    built from the mock console's real pages — progressing probes changed
+    page after distinct actions, stuck probes re-observed the same page
+    after repeating the same action. The questions sent are the exact
+    production set (agent.STUCK_QUESTIONS), so the calibration cannot
+    drift from what discovery runs.
+    """
+    from .agent import STUCK_QUESTIONS, stuck_per_answers
+
+    goal = "Look up member {member_id} and report their current savings balance"
+    base = "http://127.0.0.1:8791"
+    # Observation prefixes, exactly what production sends: 120-char heads of
+    # the last four observation prompts. Varied consecutive observations are
+    # the progress signature; identical repeats are the stuck signature —
+    # that is the discrimination the production question asks Jev to make.
+    def _obs(url: str, elems: str, n: int = 1) -> list[str]:
+        return [f"PAGE {base}{url} ELEMENTS {elems}"[:120]] * n
+
+    search_elems = "[1] textbox 'Member ID' [2] button 'Search'"
+    err_elems = "[1] button 'Back' System Error CMX-2201"
+    member_elems = ("[1] button 'Back' Savings $2,451.90 "
+                    "Checking $812.04 Status active")
+    progressing = [
+        (_obs("/search", search_elems) + _obs("/member/1001", member_elems),
+         "/member/1001", "Member Detail"),
+        (_obs("/search", search_elems, 2), "/member/1002",
+         "Member Detail Savings $19,340.00"),
+        (_obs("/lookup", search_elems) + _obs("/search", search_elems), "/search", "Search"),
+        (_obs("/search", search_elems) + _obs("/member/1006", member_elems),
+         "/member/1006", "Member Detail"),
+        (_obs("/member/1001", member_elems)
+         + _obs("/member/1001", member_elems + " reported"), "/member/1001", "Member Detail"),
+        ([f"PAGE {base}/search ELEMENTS {search_elems} filled 1003"[:120],
+          f"PAGE {base}/search ELEMENTS {search_elems} submitted"[:120]], "/search", "Search"),
+    ]
+    stuckprobes = [
+        (_obs("/search", search_elems, 4), "/search", "Search"),
+        (_obs("/search", search_elems, 4), "/search", "Search"),
+        (_obs("/member/1003", err_elems, 4), "/member/1003", "System Error"),
+        (_obs("/member/1003", err_elems, 4), "/member/1003", "System Error"),
+        (_obs("/search", search_elems, 4), "/search", "System Busy"),
+        (_obs("/member/1002", member_elems, 4), "/member/1002", "Member Detail"),
+    ]
+    probes = [
+        *(dict(label=False, actions=a, url=u, text=t) for a, u, t in progressing),
+        *(dict(label=True, actions=a, url=u, text=t) for a, u, t in stuckprobes),
+    ]
+    llm = OpenRouter(budget=b.llm)
+    model = os.environ.get("CUA_JEV_MODEL", "typesafe/jev-1.13")
+    rows = []
+    for p in probes:
+        answers = llm.decide(model, state={
+            "goal": goal,
+            "current_url": base + p["url"],
+            "page_text_excerpt": p["text"],
+            "recent_actions": p["actions"],
+        }, questions=STUCK_QUESTIONS)
+        called_stuck, p_stuck = stuck_per_answers(answers)
+        y = 1.0 if p["label"] else 0.0
+        noul = float(answers.get("progress", {}).get("noul", 1.0))
+        rows.append({
+            "label_stuck": p["label"], "url": p["url"],
+            "rule_says_stuck": called_stuck, "p_stuck": round(p_stuck, 4),
+            "noul": round(noul, 4),
+            "brier_choice": round((p_stuck - y) ** 2, 4),
+            "brier_noul": round((noul - (1.0 - y)) ** 2, 4),
+            "answers": {k: answers.get(k, {}) for k in ("mode", "progress")},
+        })
+    correct = sum(r["rule_says_stuck"] == r["label_stuck"] for r in rows)
+    report = {
+        "model": model, "n": len(rows),
+        "rule_accuracy": round(correct / len(rows), 4),
+        "mean_brier_choice": round(
+            sum(r["brier_choice"] for r in rows) / len(rows), 4),
+        "mean_brier_noul": round(sum(r["brier_noul"] for r in rows) / len(rows), 4),
+        "cost_usd": round(llm.spent_usd, 6),
+        "note": "labels by construction (varied observations = progressing, "
+                "identical repeats = stuck); production question set "
+                "(agent.STUCK_QUESTIONS); noul scored against 0=stuck / "
+                "1=progressing, choice scored on P(stuck)",
+        "probes": rows,
+    }
+    out = root / "performance"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "jev-calibration.json").write_text(json.dumps(report, indent=2))
+    print(f"[bench] jev calibration: {report['rule_accuracy']:.0%} rule accuracy, "
+          f"Brier choice {report['mean_brier_choice']:.3f} / noul {report['mean_brier_noul']:.3f} "
+          f"over {report['n']} probes (${report['cost_usd']}) -> {out / 'jev-calibration.json'}")
+    return report
 
 
 def _port_rewrite(artifact: Artifact, src_base: str, dst_base: str,
@@ -774,6 +872,8 @@ def main(argv=None) -> None:
     s.add_argument("--runs", type=int, default=5, help="runs per replay case")
     s.add_argument("--live", action="store_true",
                    help="add 3 live LLM probes (~$0.0002) for API latency")
+    s.add_argument("--jev", action="store_true",
+                   help="calibrate Jev stuck-detection against labeled probes (live, ~$0.0001)")
     s.add_argument("--tests", action="store_true", help="time the offline test suite too")
     s.add_argument("--evidence-root", default=None)
     s.add_argument("--budget", action="append", default=[], metavar="group.key=value")

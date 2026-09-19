@@ -1,0 +1,299 @@
+{
+  "model": "typesafe/jev-1.13",
+  "n": 12,
+  "rule_accuracy": 0.8333,
+  "mean_brier_choice": 0.1954,
+  "mean_brier_noul": 0.0752,
+  "cost_usd": 0.000276,
+  "note": "labels by construction (varied observations = progressing, identical repeats = stuck); production question set (agent.STUCK_QUESTIONS); noul scored against 0=stuck / 1=progressing, choice scored on P(stuck)",
+  "probes": [
+    {
+      "label_stuck": false,
+      "url": "/member/1001",
+      "rule_says_stuck": false,
+      "p_stuck": 0.1,
+      "noul": 0.89,
+      "brier_choice": 0.01,
+      "brier_noul": 0.0121,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "continue",
+          "probabilities": {
+            "continue": 0.95,
+            "stuck": 0.05
+          },
+          "confidence": 0.9
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.89
+        }
+      }
+    },
+    {
+      "label_stuck": false,
+      "url": "/member/1002",
+      "rule_says_stuck": false,
+      "p_stuck": 0.18,
+      "noul": 0.83,
+      "brier_choice": 0.0324,
+      "brier_noul": 0.0289,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "stuck",
+          "probabilities": {
+            "stuck": 0.59,
+            "continue": 0.41
+          },
+          "confidence": 0.18
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.83
+        }
+      }
+    },
+    {
+      "label_stuck": false,
+      "url": "/search",
+      "rule_says_stuck": true,
+      "p_stuck": 0.98,
+      "noul": 0.35,
+      "brier_choice": 0.9604,
+      "brier_noul": 0.4225,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "stuck",
+          "probabilities": {
+            "stuck": 0.99,
+            "continue": 0.01
+          },
+          "confidence": 0.98
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.35
+        }
+      }
+    },
+    {
+      "label_stuck": false,
+      "url": "/member/1006",
+      "rule_says_stuck": false,
+      "p_stuck": 0.11,
+      "noul": 0.9,
+      "brier_choice": 0.0121,
+      "brier_noul": 0.01,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "continue",
+          "probabilities": {
+            "continue": 0.95,
+            "stuck": 0.05
+          },
+          "confidence": 0.89
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.9
+        }
+      }
+    },
+    {
+      "label_stuck": false,
+      "url": "/member/1001",
+      "rule_says_stuck": true,
+      "p_stuck": 0.79,
+      "noul": 0.79,
+      "brier_choice": 0.6241,
+      "brier_noul": 0.0441,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "stuck",
+          "probabilities": {
+            "stuck": 0.9,
+            "continue": 0.1
+          },
+          "confidence": 0.79
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.79
+        }
+      }
+    },
+    {
+      "label_stuck": false,
+      "url": "/search",
+      "rule_says_stuck": false,
+      "p_stuck": 0.84,
+      "noul": 0.74,
+      "brier_choice": 0.7056,
+      "brier_noul": 0.0676,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "continue",
+          "probabilities": {
+            "continue": 0.58,
+            "stuck": 0.42
+          },
+          "confidence": 0.16
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.74
+        }
+      }
+    },
+    {
+      "label_stuck": true,
+      "url": "/search",
+      "rule_says_stuck": true,
+      "p_stuck": 1.0,
+      "noul": 0.2,
+      "brier_choice": 0.0,
+      "brier_noul": 0.04,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "stuck",
+          "probabilities": {
+            "continue": 0,
+            "stuck": 1
+          },
+          "confidence": 1
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.2
+        }
+      }
+    },
+    {
+      "label_stuck": true,
+      "url": "/search",
+      "rule_says_stuck": true,
+      "p_stuck": 1.0,
+      "noul": 0.18,
+      "brier_choice": 0.0,
+      "brier_noul": 0.0324,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "stuck",
+          "probabilities": {
+            "continue": 0,
+            "stuck": 1
+          },
+          "confidence": 1
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.18
+        }
+      }
+    },
+    {
+      "label_stuck": true,
+      "url": "/member/1003",
+      "rule_says_stuck": true,
+      "p_stuck": 1.0,
+      "noul": 0.05,
+      "brier_choice": 0.0,
+      "brier_noul": 0.0025,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "stuck",
+          "probabilities": {
+            "stuck": 1,
+            "continue": 0
+          },
+          "confidence": 1
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      }
+    },
+    {
+      "label_stuck": true,
+      "url": "/member/1003",
+      "rule_says_stuck": true,
+      "p_stuck": 1.0,
+      "noul": 0.05,
+      "brier_choice": 0.0,
+      "brier_noul": 0.0025,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "stuck",
+          "probabilities": {
+            "stuck": 1,
+            "continue": 0
+          },
+          "confidence": 1
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      }
+    },
+    {
+      "label_stuck": true,
+      "url": "/search",
+      "rule_says_stuck": true,
+      "p_stuck": 1.0,
+      "noul": 0.1,
+      "brier_choice": 0.0,
+      "brier_noul": 0.01,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "stuck",
+          "probabilities": {
+            "stuck": 1,
+            "continue": 0
+          },
+          "confidence": 1
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.1
+        }
+      }
+    },
+    {
+      "label_stuck": true,
+      "url": "/member/1002",
+      "rule_says_stuck": true,
+      "p_stuck": 0.99,
+      "noul": 0.48,
+      "brier_choice": 0.0001,
+      "brier_noul": 0.2304,
+      "answers": {
+        "mode": {
+          "type": "choice",
+          "choice": "stuck",
+          "probabilities": {
+            "continue": 0,
+            "stuck": 1
+          },
+          "confidence": 0.99
+        },
+        "progress": {
+          "type": "noul",
+          "noul": 0.48
+        }
+      }
+    }
+  ]
+}

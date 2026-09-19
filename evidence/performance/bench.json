@@ -37,61 +37,70 @@
     "success-1001": {
       "stats": {
         "n": 5,
-        "min_ms": 755,
-        "p50_ms": 796,
-        "p95_ms": 875,
-        "max_ms": 875
+        "min_ms": 736,
+        "p50_ms": 742,
+        "p95_ms": 757,
+        "max_ms": 757
       },
       "status": "SUCCESS"
     },
     "business-not-found-9999": {
       "stats": {
         "n": 5,
-        "min_ms": 647,
-        "p50_ms": 650,
-        "p95_ms": 659,
-        "max_ms": 659
+        "min_ms": 571,
+        "p50_ms": 607,
+        "p95_ms": 617,
+        "max_ms": 617
       },
       "status": "BUSINESS_OUTCOME"
     },
     "slow-response-absorbed-1006": {
       "stats": {
         "n": 5,
-        "min_ms": 3267,
-        "p50_ms": 3290,
-        "p95_ms": 3336,
-        "max_ms": 3336
+        "min_ms": 3221,
+        "p50_ms": 3265,
+        "p95_ms": 3279,
+        "max_ms": 3279
       },
       "status": "SUCCESS"
     },
     "transient-busy-reload-1002": {
       "stats": {
         "n": 5,
-        "min_ms": 720,
-        "p50_ms": 748,
-        "p95_ms": 818,
-        "max_ms": 818
+        "min_ms": 717,
+        "p50_ms": 742,
+        "p95_ms": 797,
+        "max_ms": 797
       },
       "status": "SUCCESS"
     }
   },
-  "server_boot_ms": 38,
-  "escalation_cycle_ms": 4661,
+  "server_boot_ms": 36,
+  "escalation_cycle_ms": 4752,
   "escalation_ok": true,
   "live_llm": {
     "model": "deepseek/deepseek-v4.1-flash",
     "calls": 3,
     "latency_s": {
-      "min": 0.463,
-      "p50": 2.028,
-      "max": 2.085
+      "min": 1.49,
+      "p50": 2.139,
+      "max": 5.51
     },
-    "cost_usd": 2.9e-05,
+    "cost_usd": 4.2e-05,
     "retries": 0
+  },
+  "jev_calibration": {
+    "model": "typesafe/jev-1.13",
+    "n": 12,
+    "rule_accuracy": 0.8333,
+    "mean_brier_choice": 0.1954,
+    "mean_brier_noul": 0.0752,
+    "cost_usd": 0.000276,
+    "note": "labels by construction (varied observations = progressing, identical repeats = stuck); production question set (agent.STUCK_QUESTIONS); noul scored against 0=stuck / 1=progressing, choice scored on P(stuck)"
   },
   "test_suite": {
     "ok": true,
-    "wall_s": 21.7,
-    "tail": "76 passed in 20.98s"
+    "wall_s": 21.6,
+    "tail": "82 passed in 20.88s"
   }
 }

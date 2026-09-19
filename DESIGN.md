@@ -36,7 +36,12 @@ Judgment calls and why, one per §4 bullet:
   decision per observation (never free text), `reasoning: disabled` plus the
   response-healing plugin for stable actions, temp 0 + fixed seed, and a Jev
   continue/stuck pair asked only when the deterministic no-progress rule
-  fires. Recorded cost: $0.0008 discovery, $0 replay.
+  fires. That pair is calibrated: 12 labeled probes (varied observations =
+  progressing, identical repeats = stuck) score 83% rule accuracy, Brier
+  0.075 on the noul question and 0.201 on the choice question, with every
+  miss a false-stuck on a transient page, the safe direction
+  (`cua bench --jev`, `evidence/performance/jev-calibration.json`).
+  Recorded cost: $0.0008 discovery, $0 replay.
 - **Computer-use technology: Playwright DOM automation narrowed to a
   numbered element table** — not screenshots+coordinates, not raw DOM
   passthrough. Deterministic, near-zero cost, and structurally the
