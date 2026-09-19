@@ -151,7 +151,9 @@ possible without per-tenant re-recording.
 Stuck detection: in replay, any hard failure after recovery attempts; in
 discovery, a no-change rule plus an optional Jev decision, two consecutive
 signals stopping the run: the community-validated "still making progress?"
-pattern, verified live (continue@0.78 while healthy). On trigger:
+pattern. Calibration (`evidence/performance/jev-calibration.json`): all six
+stuck probes caught at confidence 1.0; healthy probes answer continue at
+0.89–0.90. On trigger:
 
 1. **Detect & route.** `intervention.json`: capability, failed step, expected
    vs observed, URL, redacted excerpt, screenshot, command list.
@@ -206,23 +208,23 @@ request, moderation) never retried. Timeouts split connect 10s / read 60s
 / write 30s so a dead network fails in seconds, not minutes.
 
 **Measured baseline** (`cua bench`, `evidence/performance/bench.json`;
-5 runs/case; live probe 3 calls):
+5 runs/case; live probe 3 calls; 82 offline tests):
 
 | Case | p50 | p95 | Expectation |
 |---|---|---|---|
-| replay success | 796 ms | 875 ms | sub-second, local-CPU bound |
-| replay business outcome | 650 ms | 659 ms | fastest exit: 2 steps |
-| slow page absorbed (2.5 s fault) | 3.29 s | 3.34 s | ≈ fault delay + ε, wait budget absorbs it |
-| transient busy + reload | 748 ms | 818 ms | one reload ≈ +10% over baseline |
-| escalation cycle (scripted) | 4.66 s | | dominated by operator actions, not engine |
-| server cold boot | 38 ms | | trivial |
-| LLM call (live, JSON mode) | 2.03 s | | 4 calls ≈ 8 s discovery; network RTT dominates |
+| replay success | 742 ms | 757 ms | sub-second, local-CPU bound |
+| replay business outcome | 607 ms | 617 ms | fastest exit: 2 steps |
+| slow page absorbed (2.5 s fault) | 3.27 s | 3.28 s | ≈ fault delay + ε, wait budget absorbs it |
+| transient busy + reload | 742 ms | 797 ms | one reload, still sub-second |
+| escalation cycle (scripted) | 4.75 s | | dominated by operator actions, not engine |
+| server cold boot | 36 ms | | trivial |
+| LLM call (live, JSON mode) | 2.14 s | | 4 calls ≈ 8 s discovery; network RTT dominates |
 | discovery end-to-end (live) | 9.0 s | | $0.0008, 4 LLM calls |
-| offline test suite | 21.7 s | | 76 tests, no keys |
+| offline test suite | 21.6 s | | 82 tests, no keys |
 
 **Enforced budgets and headroom:** replay per-step wait 3s (observed p95
 under 1s; slow-fault pages use ~2.6s of it, deliberate), act timeout 10s,
-whole-run 180s (≈45× observed max); discovery wall clock 600s, 40 steps,
+whole-run 180s (≈55× the slowest replay case); discovery wall clock 600s, 40 steps,
 60 LLM calls, cost $0.50 (≈600× the $0.0008 observed run; a runaway loop
 stops at cents, not dollars). Cost is enforced pre-call: breach stops the
 loop cleanly with a `budget exceeded` reason (test-asserted, as are the

@@ -24,7 +24,7 @@ Design write-up: **[DESIGN.md](DESIGN.md)** · Run evidence: **[evidence/](evide
 uv sync                                   # Python 3.12+, creates .venv
 uv run playwright install chromium        # one-time browser download
 cp .env.example .env                      # add OPENROUTER_API_KEY (discovery only)
-uv run pytest -q                          # 76 tests, offline, no keys needed
+uv run pytest -q                          # 82 tests, offline, no keys needed
 ```
 
 ## Demo path: the exact commands
@@ -77,7 +77,7 @@ uv run cua demo --part escalation
 
 **Latency/cost benchmark** (offline replay percentiles, escalation cycle,
 server boot; `--live` adds 3 LLM probes ≈ $0.00003; `--tests` times the
-suite; writes `evidence/performance/bench.json`, the baseline behind
+suite; writes `evidence/performance/bench.json` (and with `--jev`, a stuck-detector calibration), the baseline behind
 DESIGN.md §7):
 
 ```bash
@@ -123,7 +123,7 @@ cua/
   cli.py          serve / discover / approve / replay / demo / bench
 config/allowlist.json   origins, routes, action types, risky-control patterns
 config/budgets.json     runtime budgets: timeouts, retries, cost/steps caps (DESIGN.md §7)
-tests/            76 tests: offline engine suite + real-browser integration
+tests/            82 tests: offline engine suite + real-browser integration
 evidence/         generated run records (see evidence/README.md)
 site/             static project page (self-contained; deploys to Netlify as-is)
 DESIGN.md         the eight-section design write-up

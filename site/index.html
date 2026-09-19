@@ -49,8 +49,8 @@
 			<div class="meta-row">
 				<div class="m"><div class="k">Runtime</div><div class="v">Python · Playwright · pydantic</div></div>
 				<div class="m"><div class="k">Discovery</div><div class="v">OpenRouter · deepseek-v4.1-flash</div></div>
-				<div class="m"><div class="k">Replay</div><div class="v">model-free · p50 796 ms</div></div>
-				<div class="m"><div class="k">Proof</div><div class="v">76 tests · committed live evidence</div></div>
+				<div class="m"><div class="k">Replay</div><div class="v">model-free · p50 742 ms</div></div>
+				<div class="m"><div class="k">Proof</div><div class="v">82 tests · committed live evidence</div></div>
 			</div>
 		</div>
 	</header>
@@ -74,7 +74,7 @@
 					<h3>What the evidence means</h3>
 					<ul class="clean">
 						<li><b>Measured:</b> a real model run discovered the capability ($0.000821, 4 calls); replay percentiles from 5-run benchmarks.</li>
-						<li><b>Proven by tests:</b> 76 offline tests plus real-browser integration.</li>
+						<li><b>Proven by tests:</b> 82 offline tests plus real-browser integration.</li>
 						<li><b>Scripted, labeled:</b> the keyless demo uses a scripted stand-in; live runs sit beside it.</li>
 						<li><b>Designed only:</b> multi-tenant canary fleet and desktop/AT-SPI drivers (DESIGN.md §4).</li>
 					</ul>
@@ -233,7 +233,7 @@
 					<tr><td class="k">not-found</td><td>member 9999: declared outcome returns a message payload. <b>BUSINESS_OUTCOME</b></td></tr>
 					<tr><td class="k">bad input</td><td>member "401a": declared outcome, no crash. <b>BUSINESS_OUTCOME</b></td></tr>
 					<tr><td class="k">frozen acct</td><td>member 1005: teller role may not view it. <b>BUSINESS_OUTCOME</b></td></tr>
-					<tr><td class="k">slow page</td><td>member 1006 with a 2.5 s fault: the wait absorbs it, p50 3.29 s. <b>SUCCESS</b></td></tr>
+					<tr><td class="k">slow page</td><td>member 1006 with a 2.5 s fault: the wait absorbs it, p50 3.27 s. <b>SUCCESS</b></td></tr>
 					<tr><td class="k">busy page</td><td>member 1002: one recorded reload, then done. <b>SUCCESS · 1 recovery</b></td></tr>
 					<tr><td class="k">server error</td><td>member 1003: HTTP 500 on the member page. <b>HARD_FAILURE @ step 0</b></td></tr>
 					<tr><td class="k">session expiry</td><td>member 1002: escalated to an operator, run resumes and completes. <b>ESCALATED → SUCCESS</b></td></tr>
@@ -294,7 +294,7 @@
 			</div>
 			<div class="note" style="margin-top: var(--s3)">
 				<b>Measured:</b> the scripted cycle (expire, hand off, drive, resume,
-				complete) runs end-to-end in 4.66 s
+				complete) runs end-to-end in 4.75 s
 				(<code>evidence/replay-escalation-handoff/</code>). The operator console
 				UI is deliberately not built.
 			</div>
@@ -314,14 +314,15 @@
 				<div class="panel">
 					<h3>Measured baseline (5×/case)</h3>
 					<table>
-						<tr><td class="k">replay ok</td><td>796 ms p50 · 875 ms p95</td></tr>
-						<tr><td class="k">outcome exit</td><td>650 ms p50 · 659 ms p95</td></tr>
-						<tr><td class="k">slow fault</td><td>3.29 s p50 · 3.34 s p95</td></tr>
-						<tr><td class="k">busy reload</td><td>748 ms p50 · 818 ms p95</td></tr>
-						<tr><td class="k">escalation</td><td>4.66 s cycle</td></tr>
-						<tr><td class="k">LLM call</td><td>2.03 s p50 live</td></tr>
+						<tr><td class="k">replay ok</td><td>742 ms p50 · 757 ms p95</td></tr>
+						<tr><td class="k">outcome exit</td><td>607 ms p50 · 617 ms p95</td></tr>
+						<tr><td class="k">slow fault</td><td>3.27 s p50 · 3.28 s p95</td></tr>
+						<tr><td class="k">busy reload</td><td>742 ms p50 · 797 ms p95</td></tr>
+						<tr><td class="k">escalation</td><td>4.75 s cycle</td></tr>
+						<tr><td class="k">LLM call</td><td>2.14 s p50 live</td></tr>
 						<tr><td class="k">discovery</td><td>9.0 s · $0.000821 · 4 calls</td></tr>
-						<tr><td class="k">test suite</td><td>76 tests · 21.7 s</td></tr>
+						<tr><td class="k">test suite</td><td>82 tests · 21.6 s</td></tr>
+						<tr><td class="k">jev stuck rule</td><td>83% · Brier 0.075</td></tr>
 					</table>
 				</div>
 				<div class="panel">
@@ -331,7 +332,7 @@
 						<tr><td class="k">discovery</td><td>600 s · 40 steps · 60 calls</td></tr>
 						<tr><td class="k">step wait</td><td>3 s (slow faults use ~2.6 s)</td></tr>
 						<tr><td class="k">act timeout</td><td>10 s per browser action</td></tr>
-						<tr><td class="k">run total</td><td>180 s ≈ 45× observed max</td></tr>
+						<tr><td class="k">run total</td><td>180 s ≈ 55× slowest replay case</td></tr>
 						<tr><td class="k">retries</td><td>3 attempts · 0.5/1.0 s backoff · Retry-After ≤ 30 s</td></tr>
 						<tr><td class="k">timeouts</td><td>connect 10 s · read 60 s · write 30 s</td></tr>
 						<tr><td class="k">no retry</td><td>4xx client errors raise at once</td></tr>
@@ -352,7 +353,7 @@
 			<h2>What is real, what is scripted, what is designed.</h2>
 			<div class="panel" style="overflow-x:auto">
 				<table>
-					<tr><td class="k">Real</td><td>Engine, taxonomy, guardrails, redaction, escalation, budgets, retry ladder; 76 offline + browser tests. Live runs: discovery ($0.000821) and the guardrail refusal.</td></tr>
+					<tr><td class="k">Real</td><td>Engine, taxonomy, guardrails, redaction, escalation, budgets, retry ladder; 82 offline + browser tests. Live runs: discovery ($0.000821) and the guardrail refusal.</td></tr>
 					<tr><td class="k">Scripted</td><td>The keyless demo's discovery stand-in, labeled in every artifact it produces.</td></tr>
 					<tr><td class="k">Mock by design</td><td>Target app: a hostile credit-union console (no test IDs, non-semantic markup, JS-confirm on the irreversible action, fault injection).</td></tr>
 					<tr><td class="k">Designed only</td><td>Multi-tenant canary fleet, desktop/AT-SPI driver, operator console UI (DESIGN.md §4, §8).</td></tr>
@@ -369,7 +370,7 @@
 			<div class="obj" style="margin-top: var(--s3); text-align: left; padding: var(--s4); line-height: 1.7">
 				<span class="c"># install</span><br />
 				uv sync<br /><br />
-				<span class="c"># full offline suite: 76 tests, no keys</span><br />
+				<span class="c"># full offline suite: 82 tests, no keys</span><br />
 				uv run pytest -q<br /><br />
 				<span class="c"># matrix + escalation + stability, regenerates committed evidence</span><br />
 				uv run cua demo --part all<br /><br />
@@ -409,7 +410,7 @@
 			<p class="signoff">Discover once. Replay deterministically. Escalate to a human.</p>
 			<p style="margin-top: 8px">— cua, MIT licensed</p>
 			<p style="margin-top: var(--s3); color: var(--soft); font-size: 0.82rem">
-				Python · Playwright · pydantic · OpenRouter · 76 tests · enforced budgets · committed evidence.
+				Python · Playwright · pydantic · OpenRouter · 82 tests · enforced budgets · committed evidence.
 			</p>
 		</div>
 	</footer>
